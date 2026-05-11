@@ -105,7 +105,7 @@ def _fetch_one(name, url, results):
                 continue
             vs = _analyzer.polarity_scores(title)
             label = _classify(vs['compound'])
-            item = {'title': title, 'source': name, 'compound': round(vs['compound'], 3)}
+            item = {'title': title, 'source': name, 'compound': round(vs['compound'], 3), 'url': (entry.get('link') or '').strip()}
             if label == 'pro':     pro.append(item)
             elif label == 'con':   con.append(item)
             else:                  flagged.append(item)

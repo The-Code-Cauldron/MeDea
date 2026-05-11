@@ -549,6 +549,14 @@
       font-weight: 500;
       text-wrap: pretty;
     }
+    .hl-title a, .flagged-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .hl-title a:hover, .flagged-title a:hover {
+      text-decoration: underline;
+      opacity: 0.85;
+    }
     .hl-meta {
       display: flex; align-items: center; gap: 8px;
       margin-top: 6px;
@@ -1155,7 +1163,7 @@
           <li class="hl-item">
             <div class="hl-rail" aria-hidden="true"></div>
             <div>
-              <div class="hl-title">{{ h.title }}</div>
+              <div class="hl-title">{% if h.url %}<a href="{{ h.url }}" target="_blank" rel="noopener noreferrer">{{ h.title }}</a>{% else %}{{ h.title }}{% endif %}</div>
               <div class="hl-meta">
                 <span class="hl-source">{{ h.source }}</span>
                 <span class="tick"></span>
@@ -1179,7 +1187,7 @@
           <li class="hl-item">
             <div class="hl-rail" aria-hidden="true"></div>
             <div>
-              <div class="hl-title">{{ h.title }}</div>
+              <div class="hl-title">{% if h.url %}<a href="{{ h.url }}" target="_blank" rel="noopener noreferrer">{{ h.title }}</a>{% else %}{{ h.title }}{% endif %}</div>
               <div class="hl-meta">
                 <span class="hl-source">{{ h.source }}</span>
                 <span class="tick"></span>
@@ -1206,7 +1214,7 @@
           <span class="glyph" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
           </span>
-          <span class="flagged-title">{{ h.title }}</span>
+          <span class="flagged-title">{% if h.url %}<a href="{{ h.url }}" target="_blank" rel="noopener noreferrer">{{ h.title }}</a>{% else %}{{ h.title }}{% endif %}</span>
           <span class="flagged-src">{{ h.source }}</span>
         </li>
         {% endfor %}
