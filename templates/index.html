@@ -1285,6 +1285,19 @@
       fetch('/api/refresh', { method: 'POST' })
         .then(() => {
           if (btn) btn.textContent = 'Reloading…';
+          function checkDone() {
+            fetch('/api/progress')
+              .then(r => r.json())
+              .then(data => {
+                if (data.status === 'done') {
+                  location.reload();
+                } else {
+                  setTimeout(checkDone, 1500);
+                }
+              })
+              .catch(() => setTimeout(checkDone, 3000));
+          }
+          setTimeout(checkDone, 1200);
         })
         .catch(() => {
           if (btn) { btn.disabled = false; btn.innerHTML = '&#8635; Refresh'; }
