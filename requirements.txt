@@ -1,0 +1,5 @@
+flask
+feedparser
+vaderSentiment
+requests
+certifi

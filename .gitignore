@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Environments
+venv/
+env/
+.env
+.env.*
+
+# Logs
+medea.log
+*.log
+
+# Design handoff — never commit
+MeDea-handoff/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Backups
+*.bak
