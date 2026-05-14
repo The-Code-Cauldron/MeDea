@@ -22,14 +22,22 @@ app = Flask(__name__)
 
 # (name, url, bias_label)
 FEEDS = [
-    ('BBC News',        'https://feeds.bbci.co.uk/news/rss.xml',                    'Centre'),
-    ('The Guardian',    'https://www.theguardian.com/world/rss',                     'Left'),
-    ('Sky News',        'https://feeds.skynews.com/feeds/rss/home.xml',              'Right'),
-    ('The Independent', 'https://www.independent.co.uk/rss',                         'Centre-Left'),
-    ('Al Jazeera',      'https://www.aljazeera.com/xml/rss/all.xml',                 'Global'),
-    ('UnHerd',          'https://unherd.com/feed/',                                  'Independent'),
-    ('Byline Times',    'https://bylinetimes.com/feed/',                             'Independent'),
+    ('BBC News',              'https://feeds.bbci.co.uk/news/rss.xml',                    'Centre'),
+    ('The Guardian',          'https://www.theguardian.com/world/rss',                     'Left'),
+    ('Sky News',              'https://feeds.skynews.com/feeds/rss/home.xml',              'Right'),
+    ('The Independent',       'https://www.independent.co.uk/rss',                         'Centre-Left'),
+    ('Al Jazeera',            'https://www.aljazeera.com/xml/rss/all.xml',                 'Global'),
+    ('UnHerd',                'https://unherd.com/feed/',                                  'Independent'),
+    ('Byline Times',          'https://bylinetimes.com/feed/',                             'Independent'),
+    ('The Conversation UK',   'https://theconversation.com/uk/articles.atom',              'Academic'),
+    ('Positive News',         'https://www.positive.news/feed/',                           'Independent'),
+    ('New Statesman',         'https://www.newstatesman.com/feed/',                        'Centre-Left'),
+    ('Middle East Eye',       'https://www.middleeasteye.net/rss',                         'Global'),
+    ('Declassified UK',       'https://declassifieduk.org/feed/',                          'Investigative'),
+    ('Novara Media',          'https://novaramedia.com/feed/',                             'Left'),
 ]
+
+PRO_SOURCE_CAP = 3
 
 REFRESH_INTERVAL    = 3600
 POSITIVE_THRESHOLD  =  0.05
@@ -271,7 +279,8 @@ def _fetch():
     sources = {}
     for name, _, bias in FEEDS:
         r = results.get(name, {'pro': [], 'con': [], 'flagged': [], 'error': True, 'bias': bias})
-        all_pro.extend(r['pro'])
+        capped = sorted(r['pro'], key=lambda x: x['compound'], reverse=True)[:PRO_SOURCE_CAP]
+        all_pro.extend(capped)
         all_con.extend(r['con'])
         all_flagged.extend(r['flagged'])
         sources[name] = {
