@@ -584,6 +584,53 @@
     .feed.pro .hl-score { color: var(--pro); }
     .feed.con .hl-score { color: var(--con); }
 
+    /* ───── Bias tags ───── */
+    .bias-tag {
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 2px;
+      border: 1px solid currentColor;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .bias-wire         { color: #3b82f6; }
+    .bias-left         { color: #f97316; }
+    .bias-centre-left  { color: #fb923c; }
+    .bias-centre       { color: #9ca3af; }
+    .bias-right        { color: #8b5cf6; }
+    .bias-global       { color: #06b6d4; }
+    .bias-independent  { color: #c9a84c; }
+    .bias-business     { color: #0891b2; }
+
+    /* ───── Quality risk badges ───── */
+    .risk-badge {
+      font-size: 0.53rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 1px 5px;
+      border-radius: 2px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .risk-sarcasm   { background: rgba(245,158,11,0.13); color: #f59e0b; border: 1px solid rgba(245,158,11,0.35); }
+    .risk-opinion   { background: rgba(139,92,246,0.10); color: #a78bfa; border: 1px solid rgba(139,92,246,0.30); }
+    .risk-clickbait { background: rgba(239,68,68,0.10);  color: #f87171; border: 1px solid rgba(239,68,68,0.28); }
+
+    .src-bias {
+      font-size: 0.55rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 2px;
+      border: 1px solid currentColor;
+      flex-shrink: 0;
+    }
+
     .feed-empty {
       padding: 28px 18px;
       text-align: center;
@@ -1166,6 +1213,10 @@
               <div class="hl-title">{% if h.url %}<a href="{{ h.url }}" target="_blank" rel="noopener noreferrer">{{ h.title }}</a>{% else %}{{ h.title }}{% endif %}</div>
               <div class="hl-meta">
                 <span class="hl-source">{{ h.source }}</span>
+                <span class="bias-tag bias-{{ h.bias | lower | replace(' ', '-') }}">{{ h.bias }}</span>
+                {% if h.sarcasm_risk %}<span class="risk-badge risk-sarcasm">&#9888; Sarcasm</span>{% endif %}
+                {% if h.opinion %}<span class="risk-badge risk-opinion">Opinion</span>{% endif %}
+                {% if h.clickbait %}<span class="risk-badge risk-clickbait">Clickbait</span>{% endif %}
                 <span class="tick"></span>
                 <span class="hl-score">+{{ h.compound }}</span>
               </div>
@@ -1190,6 +1241,10 @@
               <div class="hl-title">{% if h.url %}<a href="{{ h.url }}" target="_blank" rel="noopener noreferrer">{{ h.title }}</a>{% else %}{{ h.title }}{% endif %}</div>
               <div class="hl-meta">
                 <span class="hl-source">{{ h.source }}</span>
+                <span class="bias-tag bias-{{ h.bias | lower | replace(' ', '-') }}">{{ h.bias }}</span>
+                {% if h.sarcasm_risk %}<span class="risk-badge risk-sarcasm">&#9888; Sarcasm</span>{% endif %}
+                {% if h.opinion %}<span class="risk-badge risk-opinion">Opinion</span>{% endif %}
+                {% if h.clickbait %}<span class="risk-badge risk-clickbait">Clickbait</span>{% endif %}
                 <span class="tick"></span>
                 <span class="hl-score">{{ h.compound }}</span>
               </div>
@@ -1216,6 +1271,10 @@
           </span>
           <span class="flagged-title">{% if h.url %}<a href="{{ h.url }}" target="_blank" rel="noopener noreferrer">{{ h.title }}</a>{% else %}{{ h.title }}{% endif %}</span>
           <span class="flagged-src">{{ h.source }}</span>
+          <span class="bias-tag bias-{{ h.bias | lower | replace(' ', '-') }}">{{ h.bias }}</span>
+          {% if h.sarcasm_risk %}<span class="risk-badge risk-sarcasm">&#9888; Sarcasm</span>{% endif %}
+          {% if h.opinion %}<span class="risk-badge risk-opinion">Opinion</span>{% endif %}
+          {% if h.clickbait %}<span class="risk-badge risk-clickbait">Clickbait</span>{% endif %}
         </li>
         {% endfor %}
       </ul>
@@ -1243,6 +1302,7 @@
         <div class="source-row">
           <div class="src-name">
             {{ name }}
+            <span class="src-bias bias-{{ s.bias | lower | replace(' ', '-') }}">{{ s.bias }}</span>
             {% if s.get('error') %}<span class="err">feed error</span>{% endif %}
           </div>
           <div class="src-bar" role="img" aria-label="{{ s.pro }} good, {{ s.con }} filtered, {{ s.flagged }} review">

@@ -1,9 +1,11 @@
 import os
+import re
 import math
 import logging
 import threading
 import time
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import urllib3
 import requests
@@ -18,24 +20,99 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 
+# (name, url, bias_label)
 FEEDS = [
-    ('BBC News',        'https://feeds.bbci.co.uk/news/rss.xml'),
-    ('The Guardian',    'https://www.theguardian.com/world/rss'),
-    ('Sky News',        'https://feeds.skynews.com/feeds/rss/home.xml'),
-    ('The Independent', 'https://www.independent.co.uk/rss'),
+    ('BBC News',        'https://feeds.bbci.co.uk/news/rss.xml',                    'Centre'),
+    ('The Guardian',    'https://www.theguardian.com/world/rss',                     'Left'),
+    ('Sky News',        'https://feeds.skynews.com/feeds/rss/home.xml',              'Right'),
+    ('The Independent', 'https://www.independent.co.uk/rss',                         'Centre-Left'),
+    ('Reuters',         'https://feeds.reuters.com/reuters/UKTopNews',               'Wire'),
+    ('Al Jazeera',      'https://www.aljazeera.com/xml/rss/all.xml',                 'Global'),
+    ('City A.M.',       'https://www.cityam.com/feed/',                              'Business'),
+    ('UnHerd',          'https://unherd.com/feed/',                                  'Independent'),
+    ('Byline Times',    'https://bylinetimes.com/feed/',                             'Independent'),
+    ('The Spectator',   'https://www.spectator.co.uk/feed/',                         'Right'),
 ]
 
-REFRESH_INTERVAL = 3600
-POSITIVE_THRESHOLD =  0.05
-NEGATIVE_THRESHOLD = -0.05
+REFRESH_INTERVAL    = 3600
+POSITIVE_THRESHOLD  =  0.05
+NEGATIVE_THRESHOLD  = -0.05
 
 _analyzer = SentimentIntensityAnalyzer()
 
 _SESSION = requests.Session()
-_SESSION.headers.update({'User-Agent': 'MeDea/1.0 (news signal ratio)'})
+_SESSION.headers.update({'User-Agent': 'MeDea/2.0 (news signal ratio)'})
 _SESSION.verify = False
 
-# ── Main state ──────────────────────────────────────────────────────────────
+# ── Quality detection ────────────────────────────────────────────────────────
+
+SATIRE_DOMAINS = frozenset({
+    'dailymash.co.uk', 'newsthump.com', 'babylonbee.com',
+    'theonion.com', 'thepoke.co.uk', 'waterfordwhispersnews.com',
+})
+
+_SCARE_QUOTE_RE = re.compile(
+    r"['‘’“”][^‘’“”'\"]{2,40}['‘’“”]"
+)
+
+_CLICKBAIT_RE = re.compile(
+    r'^(here[’\']?s why|you won[’\']?t believe|this is why|turns out|'
+    r'it[’\']?s official|why you should|the real reason|everything you need)',
+    re.IGNORECASE,
+)
+
+_NEGATIVE_CONTEXT = frozenset({
+    'crisis', 'fail', 'failure', 'death', 'deaths', 'collapse', 'disaster',
+    'scandal', 'fraud', 'corruption', 'chaos', 'emergency', 'catastrophe',
+    'tragedy', 'killed', 'dies', 'dead', 'suffer', 'crash', 'blast',
+    'attack', 'war', 'conflict', 'riot', 'protest', 'strike',
+})
+
+_OPINION_STARTERS = (
+    'why ', 'opinion: ', 'comment: ', 'analysis: ',
+    'view: ', 'letter: ', 'column: ',
+)
+
+
+def _quality_flags(title, url, compound):
+    sarcasm_risk = False
+    opinion      = False
+    clickbait    = False
+    satire       = False
+    tl = title.lower().strip()
+
+    try:
+        domain = urlparse(url).netloc.lower().lstrip('www.')
+        if any(sd in domain for sd in SATIRE_DOMAINS):
+            satire = True
+    except Exception:
+        pass
+
+    if _SCARE_QUOTE_RE.search(title):
+        sarcasm_risk = True
+
+    if title.strip().endswith('?'):
+        sarcasm_risk = True
+
+    if compound >= POSITIVE_THRESHOLD and (set(tl.split()) & _NEGATIVE_CONTEXT):
+        sarcasm_risk = True
+
+    if _CLICKBAIT_RE.match(tl):
+        clickbait = True
+
+    if any(tl.startswith(m) for m in _OPINION_STARTERS):
+        opinion = True
+
+    return {
+        'sarcasm_risk': sarcasm_risk,
+        'opinion':      opinion,
+        'clickbait':    clickbait,
+        'satire':       satire,
+    }
+
+
+# ── Main state ───────────────────────────────────────────────────────────────
+
 _state = {
     'score': None,
     'pro': [], 'con': [], 'flagged': [],
@@ -47,7 +124,6 @@ _state = {
 }
 _lock = threading.Lock()
 
-# ── Per-feed progress (for the loading UI) ───────────────────────────────────
 _progress = {'status': 'idle', 'feeds': {}}
 _prog_lock = threading.Lock()
 
@@ -90,7 +166,7 @@ def _filter_description(score, pro_count, con_count):
     return f'Heavy filter load — {con_count} negatives for every {pro_count} worth reading'
 
 
-def _fetch_one(name, url, results):
+def _fetch_one(name, url, bias, results):
     with _prog_lock:
         _progress['feeds'][name] = {'status': 'fetching', 'count': 0}
     pro, con, flagged = [], [], []
@@ -103,9 +179,26 @@ def _fetch_one(name, url, results):
             title = (entry.get('title') or '').strip()
             if not title:
                 continue
+            link = (entry.get('link') or '').strip()
             vs = _analyzer.polarity_scores(title)
-            label = _classify(vs['compound'])
-            item = {'title': title, 'source': name, 'compound': round(vs['compound'], 3), 'url': (entry.get('link') or '').strip()}
+            compound = round(vs['compound'], 3)
+            flags = _quality_flags(title, link, compound)
+
+            if flags['satire']:
+                log.info(f'Satire excluded: {title[:60]}')
+                continue
+
+            item = {
+                'title':        title,
+                'source':       name,
+                'bias':         bias,
+                'compound':     compound,
+                'url':          link,
+                'sarcasm_risk': flags['sarcasm_risk'],
+                'opinion':      flags['opinion'],
+                'clickbait':    flags['clickbait'],
+            }
+            label = _classify(compound)
             if label == 'pro':     pro.append(item)
             elif label == 'con':   con.append(item)
             else:                  flagged.append(item)
@@ -113,34 +206,34 @@ def _fetch_one(name, url, results):
         log.error(f'{name} failed: {exc}')
         error = True
 
-    results[name] = {'pro': pro, 'con': con, 'flagged': flagged, 'error': error}
+    results[name] = {'pro': pro, 'con': con, 'flagged': flagged, 'error': error, 'bias': bias}
     total = len(pro) + len(con) + len(flagged)
     with _prog_lock:
         _progress['feeds'][name] = {
             'status': 'error' if error else 'done',
-            'count': total,
+            'count':  total,
         }
 
 
 def _fetch():
     with _prog_lock:
         _progress['status'] = 'fetching'
-        _progress['feeds'] = {name: {'status': 'pending', 'count': 0} for name, _ in FEEDS}
+        _progress['feeds'] = {name: {'status': 'pending', 'count': 0} for name, _, _b in FEEDS}
 
     results = {}
     threads = [
-        threading.Thread(target=_fetch_one, args=(name, url, results), daemon=True)
-        for name, url in FEEDS
+        threading.Thread(target=_fetch_one, args=(name, url, bias, results), daemon=True)
+        for name, url, bias in FEEDS
     ]
     for t in threads:
         t.start()
     for t in threads:
-        t.join(timeout=20)
+        t.join(timeout=25)
 
     all_pro, all_con, all_flagged = [], [], []
     sources = {}
-    for name, _ in FEEDS:
-        r = results.get(name, {'pro': [], 'con': [], 'flagged': [], 'error': True})
+    for name, _, bias in FEEDS:
+        r = results.get(name, {'pro': [], 'con': [], 'flagged': [], 'error': True, 'bias': bias})
         all_pro.extend(r['pro'])
         all_con.extend(r['con'])
         all_flagged.extend(r['flagged'])
@@ -149,6 +242,7 @@ def _fetch():
             'con':     len(r['con']),
             'flagged': len(r['flagged']),
             'error':   r.get('error', False),
+            'bias':    bias,
         }
 
     scored = len(all_pro) + len(all_con)
@@ -183,7 +277,7 @@ def _loop():
         time.sleep(REFRESH_INTERVAL)
 
 
-# ── Routes ───────────────────────────────────────────────────────────────────
+# ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route('/')
 def index():
