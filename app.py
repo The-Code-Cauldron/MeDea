@@ -66,6 +66,9 @@ _NEGATIVE_CONTEXT = frozenset({
     'scandal', 'fraud', 'corruption', 'chaos', 'emergency', 'catastrophe',
     'tragedy', 'killed', 'dies', 'dead', 'suffer', 'crash', 'blast',
     'attack', 'war', 'conflict', 'riot', 'protest', 'strike',
+    'vaccine', 'vaccination', 'virus', 'outbreak', 'epidemic', 'pandemic',
+    'infection', 'disease', 'variant', 'mutation', 'pathogen', 'measles',
+    'hantavirus', 'flu', 'covid', 'tuberculosis', 'mpox',
 })
 
 _OPINION_STARTERS = (
@@ -199,9 +202,14 @@ def _fetch_one(name, url, bias, results):
                 'clickbait':    flags['clickbait'],
             }
             label = _classify(compound)
-            if label == 'pro':     pro.append(item)
-            elif label == 'con':   con.append(item)
-            else:                  flagged.append(item)
+            if label == 'pro' and flags['sarcasm_risk']:
+                flagged.append(item)
+            elif label == 'pro':
+                pro.append(item)
+            elif label == 'con':
+                con.append(item)
+            else:
+                flagged.append(item)
     except Exception as exc:
         log.error(f'{name} failed: {exc}')
         error = True
