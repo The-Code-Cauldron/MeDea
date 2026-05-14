@@ -26,12 +26,9 @@ FEEDS = [
     ('The Guardian',    'https://www.theguardian.com/world/rss',                     'Left'),
     ('Sky News',        'https://feeds.skynews.com/feeds/rss/home.xml',              'Right'),
     ('The Independent', 'https://www.independent.co.uk/rss',                         'Centre-Left'),
-    ('Reuters',         'https://feeds.reuters.com/reuters/UKTopNews',               'Wire'),
     ('Al Jazeera',      'https://www.aljazeera.com/xml/rss/all.xml',                 'Global'),
-    ('City A.M.',       'https://www.cityam.com/feed/',                              'Business'),
     ('UnHerd',          'https://unherd.com/feed/',                                  'Independent'),
     ('Byline Times',    'https://bylinetimes.com/feed/',                             'Independent'),
-    ('The Spectator',   'https://www.spectator.co.uk/feed/',                         'Right'),
 ]
 
 REFRESH_INTERVAL    = 3600
@@ -69,7 +66,28 @@ _NEGATIVE_CONTEXT = frozenset({
     'vaccine', 'vaccination', 'virus', 'outbreak', 'epidemic', 'pandemic',
     'infection', 'disease', 'variant', 'mutation', 'pathogen', 'measles',
     'hantavirus', 'flu', 'covid', 'tuberculosis', 'mpox',
+    'warning', 'nearly', 'lottery', 'stab', 'stabbing', 'shooting', 'murder',
+    'rape', 'assault', 'abuse', 'missing', 'arrested', 'charged', 'sentenced',
+    'jailed', 'prison', 'hostage', 'kidnap', 'explosion', 'fire', 'flood',
+    'drought', 'famine', 'poverty', 'homeless', 'evicted', 'redundan',
 })
+
+_PRESS_RELEASE_RE = re.compile(
+    r'\b(announces?|appoints?|showcases?|unveils?|rebrands?|'
+    r'quarterly (?:dividend|earnings|results)|'
+    r'strategic (?:partnership|alliance)|'
+    r'(?:managing director|chief executive officer|chief financial officer|'
+    r'chief operating officer|chief technology officer) across|'
+    r'(?:names?|hires?|adds?) .{2,35} as (?:its |new )?'
+    r'(?:ceo|cto|cfo|coo|managing director|head of|director of|president|vice president))\b',
+    re.IGNORECASE,
+)
+
+_RESULTS_RE = re.compile(
+    r'\b(winning numbers?|lotto results?|lottery results?|draw (?:on|for)|'
+    r'full time|half time|match report|fixtures?|standings?)\b',
+    re.IGNORECASE,
+)
 
 _OPINION_STARTERS = (
     'why ', 'opinion: ', 'comment: ', 'analysis: ',
@@ -78,10 +96,12 @@ _OPINION_STARTERS = (
 
 
 def _quality_flags(title, url, compound):
-    sarcasm_risk = False
-    opinion      = False
-    clickbait    = False
-    satire       = False
+    sarcasm_risk  = False
+    opinion       = False
+    clickbait     = False
+    satire        = False
+    press_release = False
+    junk          = False
     tl = title.lower().strip()
 
     try:
@@ -91,13 +111,20 @@ def _quality_flags(title, url, compound):
     except Exception:
         pass
 
+    if _PRESS_RELEASE_RE.search(title):
+        press_release = True
+
+    if _RESULTS_RE.search(title):
+        junk = True
+
     if _SCARE_QUOTE_RE.search(title):
         sarcasm_risk = True
 
     if title.strip().endswith('?'):
         sarcasm_risk = True
 
-    if compound >= POSITIVE_THRESHOLD and (set(tl.split()) & _NEGATIVE_CONTEXT):
+    title_words = set(tl.split())
+    if compound >= POSITIVE_THRESHOLD and (title_words & _NEGATIVE_CONTEXT):
         sarcasm_risk = True
 
     if _CLICKBAIT_RE.match(tl):
@@ -107,10 +134,12 @@ def _quality_flags(title, url, compound):
         opinion = True
 
     return {
-        'sarcasm_risk': sarcasm_risk,
-        'opinion':      opinion,
-        'clickbait':    clickbait,
-        'satire':       satire,
+        'sarcasm_risk':  sarcasm_risk,
+        'opinion':       opinion,
+        'clickbait':     clickbait,
+        'satire':        satire,
+        'press_release': press_release,
+        'junk':          junk,
     }
 
 
@@ -187,8 +216,8 @@ def _fetch_one(name, url, bias, results):
             compound = round(vs['compound'], 3)
             flags = _quality_flags(title, link, compound)
 
-            if flags['satire']:
-                log.info(f'Satire excluded: {title[:60]}')
+            if flags['satire'] or flags['press_release'] or flags['junk']:
+                log.info(f'Excluded [{("satire" if flags["satire"] else "press_release" if flags["press_release"] else "junk")}]: {title[:60]}')
                 continue
 
             item = {
