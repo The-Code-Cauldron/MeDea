@@ -128,7 +128,10 @@ _FORCE_NEGATIVE_RE = re.compile(
     r'\b(?:unpaid|underpaid|convicted|sentenced|indicted|prosecuted|'
     r'bankrupt|insolvent|receivership|liquidat|'
     r'misconduct|defrauded|scammed|exploited|exploitation|'
-    r'repossessed|foreclosed|overcharged|embezzl)\b',
+    r'repossessed|foreclosed|overcharged|embezzl|'
+    r'decimate|suppress|disenfranchis|gerrymander|discriminat|segregat|'
+    r'racist|racism|supremacist|neo-nazi|fascist|authoritarian)\b'
+    r'|jim crow|voter suppression|voting rights',
     re.IGNORECASE,
 )
 
