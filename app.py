@@ -779,6 +779,7 @@ def index():
     d['ad_mid']               = _get_ad('mid')
     d['ad_bottom']            = _get_ad('bottom')
     d['ad_sidebar']           = _get_ad('sidebar')
+    d['ad_feed']              = _get_ad('feed')
     # Geo-feed
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     cc = session.get('geo_country')
@@ -902,6 +903,16 @@ _SELF_PROMOS = {
         'bg_color':   '#1c1a16',
         'accent':     '#2a5f43',
         'image_url':  None,
+        'self_promo': True,
+    },
+    'feed': {
+        'advertiser': 'NetSecure',
+        'url':        'https://the-architect-neo.github.io/',
+        'headline':   'NetSecure',
+        'strapline':  'Enterprise network security for organisations that cannot afford to be breached.',
+        'cta':        'Learn more →',
+        'bg_color':   '#0f1a2e',
+        'accent':     '#4a9eff',
         'self_promo': True,
     },
 }

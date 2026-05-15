@@ -361,6 +361,11 @@
   }
   .below-stories .filtered-strip,
   .below-stories .flagged-strip{margin-top:0}
+  .below-right{display:flex;flex-direction:column;gap:24px}
+  .ad-feed-wrap .ad-label{
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--ink-4);font-weight:600;margin-bottom:8px;
+  }
   @media(max-width:768px){.below-stories{grid-template-columns:1fr}}
 
   /* filtered list — quieter look */
@@ -1432,37 +1437,43 @@
       </div>
     </div>
 
-    <div class="flagged-strip">
-      <div class="head">
-        <h3>Held for your judgement</h3>
-        <span class="meta" style="font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);font-weight:600">{{ flagged|length }} of {{ flagged_count }}</span>
-      </div>
-      <p class="intro">Positive score, negative context. We didn't force these into the green.</p>
-      <div class="story-list">
-        {% if flagged %}
-          {% for h in flagged %}
-          <article class="story is-flag" data-topic="{{ h.topic|default('General') }}">
-            <div class="num">{{ "%02d"|format(loop.index) }}</div>
-            <div>
-              <a class="title" href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
-              <div class="byline">
-                <span class="src">{{ h.source }}</span>
-                <span class="bias">{{ h.bias }}</span>
-                <span class="sep">·</span>
-                <span class="score" style="color:var(--flag)">{{ "%+.2f"|format(h.compound) }}</span>
-                {% if h.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
-                {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
-                {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
-                {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
-                {% if h.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ h.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
+    <div class="below-right">
+      <div class="flagged-strip">
+        <div class="head">
+          <h3>Held for your judgement</h3>
+          <span class="meta" style="font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);font-weight:600">{{ flagged|length }} of {{ flagged_count }}</span>
+        </div>
+        <p class="intro">Positive score, negative context. We didn't force these into the green.</p>
+        <div class="story-list">
+          {% if flagged %}
+            {% for h in flagged %}
+            <article class="story is-flag" data-topic="{{ h.topic|default('General') }}">
+              <div class="num">{{ "%02d"|format(loop.index) }}</div>
+              <div>
+                <a class="title" href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
+                <div class="byline">
+                  <span class="src">{{ h.source }}</span>
+                  <span class="bias">{{ h.bias }}</span>
+                  {% if h.pub_ago %}<span class="sep">·</span><span class="ago">{{ h.pub_ago }}</span>{% endif %}
+                  <span class="sep">·</span>
+                  <span class="score" style="color:var(--flag)">{{ "%+.2f"|format(h.compound) }}</span>
+                  {% if h.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
+                  {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
+                  {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
+                  {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+                  {% if h.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ h.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
+                </div>
               </div>
-            </div>
-          </article>
-          {% endfor %}
-        {% else %}
-          <p class="empty">Nothing ambiguous this round.</p>
-        {% endif %}
+            </article>
+            {% endfor %}
+          {% else %}
+            <p class="empty">Nothing ambiguous this round.</p>
+          {% endif %}
+        </div>
       </div>
+
+      <!-- Feed ad slot — fills gap below Held stories -->
+      {{ ad_slot(ad_feed, 'feed') }}
     </div>
   </div>
 
