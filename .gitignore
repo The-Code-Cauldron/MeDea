@@ -31,6 +31,7 @@ Thumbs.db
 *.bak
 
 # Proprietary business documents — NEVER commit
+MeDeaMonetised.md
 STRATEGY-100X.md
 BUSINESS-PLAN.md
 AD-SCHEDULE.md

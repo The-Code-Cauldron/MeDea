@@ -1,39 +1,47 @@
 [//]: # (ARCH-MDA-3e8b5f1a)
 
-# MeDea — News Signal Intelligence
+# MeDea
 
-[![Sponsor on GitHub](https://img.shields.io/badge/Sponsor-%E2%9D%A4-navy?logo=github&logoColor=white&color=1C3F6E)](https://github.com/sponsors/The-Architect-Neo)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-navy?logo=github&logoColor=white&color=1C3F6E)](https://github.com/sponsors/The-Architect-Neo)
 
-The news is not balanced. MeDea measures the imbalance — and surfaces what matters.
+**Signal over noise.**
 
-32 global sources. Scored every 30 minutes. One number tells you whether today's news cycle is worth your attention.
+The news is not balanced. MeDea measures the imbalance — reading 32 global newsrooms every 30 minutes, scoring every headline for sentiment and framing quality, and returning a single number: the ProCon Score.
 
-**Live:** medea-production-dd4b.up.railway.app
+Bloomberg does this for financial markets at £20,000/year per seat. MeDea does it for the world.
 
 ---
 
-## What it does
+## The ProCon Score
 
-- **ProCon Score** — percentage of headlines scoring positive vs filtered out. Updated every 30 minutes.
-- **The Dispatch** — editor-curated stories filed directly by The Architect. Persistent, admin-controlled.
-- **OpinionSays** — single editorial statement from the editor. Always current.
-- **Your Signal** — geo-located section serving regional news based on the reader's country.
-- **Topic filter** — filter all sections by topic (Politics, Health, Economy, Technology, Environment, Human Rights etc.)
-- **Ad rotation** — 5 independent ad slots, up to 5 advertisers per slot, 45-second rotation.
-- **Analytics** — impression tracking, story click intelligence, live reader count (admin only).
-- **PWA** — installable on any phone, any OS, no app store.
+Every headline is classified Pro (constructive, positive, worth your attention) or Con (fear-coded, alarmist, filtered out). Edge cases are held for editorial judgement — never forced.
+
+**ProCon Score = (Pro headlines / Total headlines) × 100**
+
+A score of 35 means 65% of today's headlines are negative. A score of 72 means the signal is clean. One number. Actionable.
+
+---
+
+## What's live
+
+- 32 independent newsrooms across six continents — scored every 30 minutes
+- Framing risk detection — catches geographic/institutional misleads
+- Force-negative override — VADER sentiment corrected for domain blind spots
+- Topic filter — Politics · War · Crime · Health · Economy · Environment · Technology · Education · Human Rights
+- The Dispatch — editor-curated stories with archive links for paywalled content
+- OpinionSays — direct editorial voice from The Architect
+- Your Signal — geo-detected regional news layer per reader
+- Ad rotation — 5 independent slots, up to 5 advertisers each, 45-second cycle
+- Direct message to the editor — Stripe-powered £1.50 shoutout
+- Analytics — impression tracking, story clicks, live reader count
+- PWA — installable on any phone, any OS, no app store required
+- Secure admin — session-based, login-gated, no token in URL
 
 ---
 
 ## Stack
 
-Python · Flask · VADER Sentiment · feedparser · psycopg2 · Neon Postgres · Railway
-
----
-
-## Configuration
-
-Requires environment variables set in Railway. Not documented here.
+Python · Flask · VADER Sentiment · feedparser · Neon Postgres · Railway · Stripe
 
 ---
 
@@ -44,15 +52,13 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open `http://localhost:5000`. First load takes 15–20 seconds while the initial feed fetch runs.
-
-Admin: `http://localhost:5000/login`
+First load: 15–20 seconds while the feed fetch runs. Admin login at `/login`.
 
 ---
 
 ## Deploy
 
-Connect to Railway. Set environment variables. Push to main — Railway auto-deploys.
+Connect to Railway. Set required environment variables. Push to `main` — Railway auto-deploys.
 
 ```
 web: python app.py
@@ -64,4 +70,4 @@ web: python app.py
 
 MIT — see LICENSE
 
-© 2026 The Architect
+© 2026 The Architect · [the-architect-neo.github.io](https://the-architect-neo.github.io/)
