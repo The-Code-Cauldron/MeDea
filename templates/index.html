@@ -517,7 +517,7 @@
   .dispatch-headline-input:focus{background:var(--paper-2)}
   .dispatch-feed{padding:0 28px}
   .dispatch-sponsor{
-    padding:18px 28px;border-top:1px dashed var(--rule);
+    padding:18px 28px 14px;border-top:1px dashed var(--rule);
     font-family:var(--serif);font-style:italic;font-weight:300;
     font-size:15px;line-height:1.55;color:var(--ink-2);
     font-variation-settings:"opsz" 16;
@@ -526,6 +526,60 @@
     color:var(--pos-deep);border-bottom:1px solid var(--pos-soft);padding-bottom:1px;
   }
   .dispatch-sponsor a:hover{border-color:var(--pos-deep)}
+  /* fee tooltip */
+  .fee-tip{position:relative;display:inline}
+  .fee-tip-box{
+    display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+    background:var(--ink);color:var(--paper);
+    font-family:var(--sans);font-size:11px;font-style:normal;line-height:1.7;
+    padding:12px 16px;white-space:nowrap;z-index:200;letter-spacing:.02em;
+    pointer-events:none;min-width:220px;
+  }
+  .fee-tip-box::after{
+    content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+    border:5px solid transparent;border-top-color:var(--ink);
+  }
+  .fee-tip-box strong{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:9.5px}
+  .fee-tip-box em{color:var(--pos);font-style:normal}
+  .fee-tip:hover .fee-tip-box{display:block}
+  /* sponsor ticker */
+  .sponsor-ticker{
+    padding:10px 28px 18px;
+    font-family:var(--sans);font-size:11px;letter-spacing:.14em;
+    color:var(--ink-3);display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  }
+  .sponsor-ticker .tl{
+    text-transform:uppercase;font-weight:700;letter-spacing:.22em;color:var(--ink-4);font-size:10px;
+  }
+  .sponsor-ticker .sn{
+    color:var(--pos-deep);font-weight:600;font-family:var(--mono);font-size:11px;
+  }
+  .sponsor-ticker .anon{color:var(--ink-3);font-style:italic;font-family:var(--serif);font-size:12px}
+  .sponsor-ticker .sep{color:var(--rule);font-size:10px}
+  /* sponsor fulfillment log (admin only) */
+  .sponsor-log{
+    margin-top:40px;padding-top:24px;border-top:1px solid var(--ink);
+  }
+  .sponsor-log .section-head{margin-bottom:14px}
+  .sponsor-log-row{
+    display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;
+    padding:12px 0;border-bottom:1px solid var(--rule);
+  }
+  .sponsor-log-row:last-child{border-bottom:none}
+  .sponsor-log-row .platform{
+    font-family:var(--sans);font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:700;padding:2px 7px;border-radius:2px;
+  }
+  .sponsor-log-row .platform.github{background:var(--pos-paper);color:var(--pos-deep)}
+  .sponsor-log-row .platform.patreon{background:var(--flag-soft);color:var(--flag)}
+  .fulfill-btn{
+    appearance:none;background:transparent;border:1px solid var(--rule);
+    color:var(--ink-3);font-family:var(--sans);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;font-weight:600;padding:6px 12px;cursor:pointer;
+    transition:background .15s,color .15s;white-space:nowrap;
+  }
+  .fulfill-btn:hover{background:var(--pos-deep);border-color:var(--pos-deep);color:var(--paper)}
+  .fulfill-btn.done{opacity:.4;cursor:default;pointer-events:none}
   .dispatch-empty{
     display:flex;align-items:center;gap:12px;padding:28px 0;
     font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
@@ -859,10 +913,60 @@
         {% endif %}
       </div>
       <div class="dispatch-sponsor">
-        For more news like this, <a href="https://github.com/sponsors/The-Architect-Neo" target="_blank" rel="noopener">sponsor the editor</a> — keep him working 24/7 for you.
+        For more news like this,
+        <span class="fee-tip">
+          <a href="https://github.com/sponsors/The-Architect-Neo" target="_blank" rel="noopener">sponsor the editor</a>
+          <span class="fee-tip-box">
+            <strong>GitHub Sponsors</strong><br>
+            0% platform fee &nbsp;·&nbsp; <em>~2.9% + 30p card only</em><br>
+            What you give, he receives.<br>
+            <br>
+            <strong>Patreon</strong><br>
+            8–12% platform fee + card processing<br>
+            Less arrives, but still appreciated.
+          </span>
+        </span>
+        — keep him working 24/7 for you.
       </div>
+      {% if sponsors %}
+      <div class="sponsor-ticker">
+        <span class="tl">Supported by</span>
+        {% for s in sponsors %}
+          {% if s.sponsor_name %}
+            <span class="sn">{{ s.sponsor_name }}</span>
+          {% else %}
+            <span class="anon">Anonymous</span>
+          {% endif %}
+          {% if not loop.last %}<span class="sep">·</span>{% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
   </section>
+
+  {% if admin and unfulfilled_sponsors %}
+  <!-- ───── Sponsor log (admin only) ───── -->
+  <section class="sponsor-log">
+    <div class="section-head">
+      <h2 class="ttl">Shoutouts <em>outstanding</em></h2>
+      <span class="meta">{{ unfulfilled_sponsors|length }} pending</span>
+    </div>
+    {% for s in unfulfilled_sponsors %}
+    <div class="sponsor-log-row" id="sl-{{ s.id }}">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+        <span class="platform {{ s.platform }}">{{ s.platform }}</span>
+        <span style="font-family:var(--serif);font-weight:500;font-size:16px">
+          {{ s.sponsor_name or 'Anonymous' }}
+        </span>
+        {% if s.tier_name %}<span class="bias">{{ s.tier_name }}</span>{% endif %}
+        {% if s.amount_cents %}<span style="font-family:var(--mono);font-size:12px;color:var(--pos-deep)">£{{ '%.2f'|format(s.amount_cents / 100) }}/mo</span>{% endif %}
+        <span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">{{ s.sponsored_at }}</span>
+      </div>
+      <button class="fulfill-btn" id="fb-{{ s.id }}" onclick="fulfillSponsor({{ s.id }})">Mark done</button>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
 
   <!-- ───── Sources ───── -->
   <section class="sources">
@@ -1146,6 +1250,21 @@
         _lastDispatchId=rows.length?rows[0].id:null;
         renderFeed(rows,false); updateMeta(rows.length);
       });
+    });
+  }
+
+  function fulfillSponsor(id){
+    const btn = document.getElementById('fb-' + id);
+    if (btn){ btn.textContent='Saving…'; btn.classList.add('done'); }
+    fetch('/api/sponsors/' + id + '/fulfill', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:DISPATCH_TOKEN})
+    }).then(r=>r.json()).then(data=>{
+      if (data.error){ if(btn){btn.textContent='Mark done';btn.classList.remove('done');} return; }
+      const row = document.getElementById('sl-' + id);
+      if (row) row.style.opacity = '0.35';
+      if (btn) btn.textContent = 'Done';
     });
   }
 

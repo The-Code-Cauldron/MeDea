@@ -1,6 +1,8 @@
 import os
 import re
 import math
+import hmac
+import hashlib
 import html as _html
 import logging
 import threading
@@ -110,6 +112,11 @@ _FORCE_NEGATIVE_RE = re.compile(
     r'repossessed|foreclosed|overcharged|embezzl)\b',
     re.IGNORECASE,
 )
+
+# Domains that always score maximum positive — no pipeline, no filters
+_PINNED_PRO = frozenset({
+    'the-architect-neo.github.io',
+})
 
 _PRESS_RELEASE_RE = re.compile(
     r'\b(announces?|appoints?|showcases?|unveils?|rebrands?|'
@@ -224,6 +231,19 @@ def _init_db():
                         submitted_at TIMESTAMPTZ DEFAULT NOW()
                     )
                 """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS sponsors (
+                        id           SERIAL PRIMARY KEY,
+                        platform     TEXT    NOT NULL,
+                        sponsor_name TEXT,
+                        tier_name    TEXT,
+                        amount_cents INTEGER DEFAULT 0,
+                        event_type   TEXT,
+                        sponsored_at TIMESTAMPTZ DEFAULT NOW(),
+                        fulfilled    BOOLEAN DEFAULT FALSE,
+                        notes        TEXT
+                    )
+                """)
             conn.commit()
         log.info('Dispatch DB ready')
     except Exception as exc:
@@ -272,6 +292,33 @@ def _db_clear():
         with conn.cursor() as cur:
             cur.execute('DELETE FROM dispatches')
         conn.commit()
+
+
+def _get_sponsors(limit=10, unfulfilled_only=False):
+    try:
+        with _db_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                if unfulfilled_only:
+                    cur.execute(
+                        "SELECT * FROM sponsors WHERE event_type='created' AND fulfilled=FALSE ORDER BY sponsored_at DESC LIMIT %s",
+                        (limit,)
+                    )
+                else:
+                    cur.execute(
+                        "SELECT * FROM sponsors WHERE event_type='created' ORDER BY sponsored_at DESC LIMIT %s",
+                        (limit,)
+                    )
+                rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if hasattr(d.get('sponsored_at'), 'strftime'):
+                d['sponsored_at'] = d['sponsored_at'].strftime('%d %b %Y')
+            result.append(d)
+        return result
+    except Exception as exc:
+        log.error(f'_get_sponsors failed: {exc}')
+        return []
 
 
 _lock = threading.Lock()
@@ -497,11 +544,13 @@ def index():
     d['score_class']   = _score_class(d['score'])
     d['arc_path'], d['nx'], d['ny'] = _dial_arc(d['score'])
     d['description']   = _filter_description(d['score'], d['pro_count'], d['con_count'])
-    d['dispatches']    = _db_fetch() if _DB_URL else []
-    d['dispatch_live'] = bool(_DB_URL)
-    admin_token        = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
-    d['admin']         = bool(admin_token and request.args.get('edit') == admin_token)
-    d['admin_token']   = admin_token if d['admin'] else ''
+    d['dispatches']           = _db_fetch() if _DB_URL else []
+    d['dispatch_live']        = bool(_DB_URL)
+    admin_token               = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
+    d['admin']                = bool(admin_token and request.args.get('edit') == admin_token)
+    d['admin_token']          = admin_token if d['admin'] else ''
+    d['sponsors']             = _get_sponsors(limit=12) if _DB_URL else []
+    d['unfulfilled_sponsors'] = _get_sponsors(limit=50, unfulfilled_only=True) if (_DB_URL and d['admin']) else []
     return render_template('index.html', **d)
 
 
@@ -527,6 +576,10 @@ def api_submit():
         return jsonify({'error': 'No URL provided'}), 400
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
+    try:
+        submit_domain = urlparse(url).netloc.lower().lstrip('www.')
+    except Exception:
+        submit_domain = ''
     custom_title = data.get('custom_title', '').strip()
     if custom_title:
         title = custom_title
@@ -534,12 +587,18 @@ def api_submit():
         title = _extract_title(url)
         if not title:
             return jsonify({'error': 'Could not read a headline from that URL'}), 422
-    vs       = _analyzer.polarity_scores(title)
-    compound = round(vs['compound'], 3)
-    if _FORCE_NEGATIVE_RE.search(title):
-        compound = min(compound, NEGATIVE_THRESHOLD - 0.01)
-    flags = _quality_flags(title, url, compound)
-    label = _classify(compound)
+    if submit_domain in _PINNED_PRO:
+        compound = 1.0
+        label    = 'pro'
+        flags    = {'sarcasm_risk': False, 'opinion': False, 'clickbait': False,
+                    'satire': False, 'press_release': False, 'junk': False}
+    else:
+        vs       = _analyzer.polarity_scores(title)
+        compound = round(vs['compound'], 3)
+        if _FORCE_NEGATIVE_RE.search(title):
+            compound = min(compound, NEGATIVE_THRESHOLD - 0.01)
+        flags = _quality_flags(title, url, compound)
+        label = _classify(compound)
     try:
         domain = urlparse(url).netloc.lower().lstrip('www.')
     except Exception:
@@ -619,6 +678,97 @@ def api_progress():
 def api_refresh():
     threading.Thread(target=_fetch, daemon=True).start()
     return jsonify({'status': 'fetching'})
+
+
+# ── Sponsor webhooks ──────────────────────────────────────────────────────────
+
+def _insert_sponsor(platform, sponsor_name, tier_name, amount_cents, event_type):
+    if not _DB_URL:
+        return
+    with _db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'INSERT INTO sponsors (platform, sponsor_name, tier_name, amount_cents, event_type) VALUES (%s,%s,%s,%s,%s)',
+                (platform, sponsor_name, tier_name, amount_cents, event_type)
+            )
+        conn.commit()
+
+
+@app.route('/webhook/github-sponsors', methods=['POST'])
+def webhook_github():
+    secret  = os.environ.get('GITHUB_WEBHOOK_SECRET', '')
+    payload = request.get_data()
+    sig     = request.headers.get('X-Hub-Signature-256', '')
+    if secret:
+        expected = 'sha256=' + hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            return jsonify({'error': 'Bad signature'}), 403
+    data        = request.get_json(silent=True) or {}
+    action      = data.get('action', '')
+    sponsorship = data.get('sponsorship', {})
+    sponsor     = sponsorship.get('sponsor', {})
+    tier        = sponsorship.get('tier', {})
+    privacy     = sponsorship.get('privacy_level', 'public')
+    name        = sponsor.get('login') if privacy == 'public' else None
+    tier_name   = tier.get('name', '')
+    cents       = tier.get('monthly_price_in_cents', 0)
+    try:
+        _insert_sponsor('github', name, tier_name, cents, action)
+        log.info(f'GitHub sponsor event: {action} {name or "anonymous"}')
+    except Exception as exc:
+        log.error(f'GitHub webhook DB: {exc}')
+    return jsonify({'status': 'ok'}), 200
+
+
+@app.route('/webhook/patreon', methods=['POST'])
+def webhook_patreon():
+    secret  = os.environ.get('PATREON_WEBHOOK_SECRET', '')
+    payload = request.get_data()
+    sig     = request.headers.get('X-Patreon-Signature', '')
+    if secret:
+        expected = hmac.new(secret.encode(), payload, hashlib.md5).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            return jsonify({'error': 'Bad signature'}), 403
+    data     = request.get_json(silent=True) or {}
+    event    = request.headers.get('X-Patreon-Event', '')
+    name     = None
+    cents    = 0
+    for item in data.get('included', []):
+        if item.get('type') == 'user':
+            attrs = item.get('attributes', {})
+            if not attrs.get('hide_pledges', True):
+                name = attrs.get('full_name') or attrs.get('vanity')
+    pledge = data.get('data', {})
+    if pledge.get('type') in ('pledge', 'member'):
+        cents = pledge.get('attributes', {}).get('amount_cents', 0)
+    action_map = {
+        'members:pledge:create': 'created', 'pledges:create': 'created',
+        'members:pledge:delete': 'cancelled', 'pledges:delete': 'cancelled',
+        'members:pledge:update': 'tier_changed', 'pledges:update': 'tier_changed',
+    }
+    event_type = action_map.get(event, event or 'created')
+    try:
+        _insert_sponsor('patreon', name, '', cents, event_type)
+        log.info(f'Patreon event: {event_type} {name or "anonymous"}')
+    except Exception as exc:
+        log.error(f'Patreon webhook DB: {exc}')
+    return jsonify({'status': 'ok'}), 200
+
+
+@app.route('/api/sponsors/<int:sponsor_id>/fulfill', methods=['POST'])
+def api_sponsor_fulfill(sponsor_id):
+    data = request.get_json(silent=True) or {}
+    if not _admin_check(data):
+        return jsonify({'error': 'Not authorised'}), 403
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('UPDATE sponsors SET fulfilled=TRUE WHERE id=%s', (sponsor_id,))
+            conn.commit()
+    except Exception as exc:
+        log.error(f'Fulfill sponsor: {exc}')
+        return jsonify({'error': 'DB error'}), 500
+    return jsonify({'status': 'ok'})
 
 
 if __name__ == '__main__':
