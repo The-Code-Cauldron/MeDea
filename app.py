@@ -113,8 +113,8 @@ _CLICKBAIT_RE = re.compile(
 _NEGATIVE_CONTEXT = frozenset({
     'crisis', 'fail', 'failure', 'death', 'deaths', 'collapse', 'disaster',
     'scandal', 'fraud', 'corruption', 'chaos', 'emergency', 'catastrophe',
-    'tragedy', 'killed', 'dies', 'dead', 'suffer', 'crash', 'blast',
-    'attack', 'war', 'conflict', 'riot', 'protest', 'strike',
+    'tragedy', 'kill', 'kills', 'killed', 'killing', 'dies', 'dead', 'suffer', 'crash', 'blast',
+    'attack', 'attacks', 'attacked', 'war', 'conflict', 'riot', 'protest', 'strike',
     'vaccine', 'vaccination', 'virus', 'outbreak', 'epidemic', 'pandemic',
     'infection', 'disease', 'variant', 'mutation', 'pathogen', 'measles',
     'hantavirus', 'flu', 'covid', 'tuberculosis', 'mpox',
@@ -127,6 +127,11 @@ _NEGATIVE_CONTEXT = frozenset({
     'contaminated', 'contamination', 'toxic', 'recall', 'fined', 'cover-up',
     'misconduct', 'coverup', 'exploitation', 'exploited', 'defrauded',
     'bankrupt', 'insolvent', 'receivership', 'liquidation', 'repossessed',
+    # Conflict/humanitarian — VADER misreads these as positive (relief, aid, UNICEF)
+    'civilian', 'civilians', 'airstrike', 'airstrikes', 'bombing', 'bombed',
+    'bombardment', 'casualt', 'casualties', 'displaced', 'siege', 'occupation',
+    'massacre', 'genocide', 'ceasefire', 'troops', 'offensive', 'shelling',
+    'wounded', 'humanitarian', 'evacuate', 'evacuation', 'rubble', 'blockade',
 })
 
 _FORCE_NEGATIVE_RE = re.compile(
@@ -135,7 +140,12 @@ _FORCE_NEGATIVE_RE = re.compile(
     r'misconduct|defrauded|scammed|exploited|exploitation|'
     r'repossessed|foreclosed|overcharged|embezzl|'
     r'decimate|suppress|disenfranchis|gerrymander|discriminat|segregat|'
-    r'racist|racism|supremacist|neo-nazi|fascist|authoritarian)\b'
+    r'racist|racism|supremacist|neo-nazi|fascist|authoritarian|'
+    # Conflict — VADER cannot be trusted here regardless of score
+    r'airstrike|airstrikes|massacre|genocide|bombardment|'
+    r'ethnic cleansing|war crime|civilian.{0,20}kill|'
+    r'kill[s]?\s+\d|killed\s+\d|killing\s+\d|'
+    r'children\s+killed|civilians\s+killed|people\s+killed)\b'
     r'|jim crow|voter suppression|voting rights',
     re.IGNORECASE,
 )
