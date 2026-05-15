@@ -821,7 +821,6 @@ def index():
     d['unfulfilled_sponsors'] = _get_sponsors(limit=50, unfulfilled_only=True) if (_DB_URL and d['admin']) else []
     d['shoutouts']            = _get_shoutouts(limit=20, unpaid=True) if (_DB_URL and d['admin']) else []
     d['stripe_live']          = bool(_STRIPE_KEY)
-    d['stripe_pub']           = _STRIPE_PUB
     d['opinion']              = _get_opinion()
     d['traffic']              = _get_traffic() if d['admin'] else None
     d['total_visitors']       = _get_total_visitors() if _DB_URL else 0
@@ -1588,7 +1587,6 @@ def api_opinion_clear():
 # ── Shoutouts (Stripe) ───────────────────────────────────────────────────────
 
 _STRIPE_KEY     = os.environ.get('STRIPE_SECRET_KEY', '')
-_STRIPE_PUB     = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 _STRIPE_WEBHOOK = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 _SHOUTOUT_PRICE = 150  # pence (£1.50)
 
