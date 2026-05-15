@@ -446,6 +446,13 @@
   .src-counts .f{color:var(--flag)}
   .src-counts .err{color:var(--neg);font-family:var(--sans);font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
 
+  /* ───── Archive link ───── */
+  .pill.paywall{
+    color:var(--ink-3);background:transparent;border:1px solid var(--rule);
+    text-decoration:none;font-style:normal;
+  }
+  .pill.paywall:hover{color:var(--ink);border-color:var(--ink-2)}
+
   /* ───── Topic filter ───── */
   .topic-bar{
     margin-top:28px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
@@ -463,6 +470,9 @@
   .topic-chip:hover{border-color:var(--ink-2);color:var(--ink)}
   .topic-chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
   .story.topic-hidden{display:none}
+  .chip-count{
+    font-family:var(--mono);font-size:9px;opacity:.6;margin-left:3px;
+  }
 
   /* ───── Visitor counter ───── */
   .visitor-counter{
@@ -996,13 +1006,15 @@
   {{ ad_slot(ad_top, 'top') }}
 
   <!-- ───── Topic filter chips ───── -->
-  {% set all_topics = (pro + con + flagged) | map(attribute='topic') | select | unique | sort | list %}
+  {% set all_stories = pro + con + flagged %}
+  {% set all_topics = all_stories | map(attribute='topic') | select | unique | sort | list %}
   {% if all_topics %}
   <div class="topic-bar">
     <span class="tb-label">Filter</span>
-    <button class="topic-chip active" data-filter="all" onclick="filterTopic(this)">All</button>
+    <button class="topic-chip active" data-filter="all" onclick="filterTopic(this)">All <span class="chip-count">{{ all_stories|length }}</span></button>
     {% for t in all_topics %}
-    <button class="topic-chip" data-filter="{{ t }}" onclick="filterTopic(this)">{{ t }}</button>
+    {% set tcount = all_stories | selectattr('topic','equalto',t) | list | length %}
+    <button class="topic-chip" data-filter="{{ t }}" onclick="filterTopic(this)">{{ t }} <span class="chip-count">{{ tcount }}</span></button>
     {% endfor %}
   </div>
   {% endif %}
@@ -1030,6 +1042,7 @@
             <span style="font-family:var(--mono);color:var(--pos-deep);font-variant-numeric:tabular-nums">{{ "%+.2f"|format(lead.compound) }} sentiment</span>
             {% if lead.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
             {% if lead.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+            {% if lead.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ lead.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
           </div>
         </article>
 
@@ -1046,6 +1059,7 @@
                 <span class="score">{{ "%+.2f"|format(h.compound) }}</span>
                 {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
                 {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+                {% if h.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ h.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
               </div>
             </div>
           </article>
@@ -1213,6 +1227,7 @@
                 {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
                 {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
                 {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+                {% if h.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ h.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
               </div>
             </div>
           </article>
@@ -1245,6 +1260,7 @@
                 {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
                 {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
                 {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+                {% if h.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ h.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
               </div>
             </div>
           </article>

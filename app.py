@@ -137,15 +137,43 @@ _FORCE_NEGATIVE_RE = re.compile(
 
 # Topic tagging — first match wins
 _TOPIC_RULES = [
-    ('Politics',     re.compile(r'\b(?:election|parliament|government|party|vote[sd]?|minister|cabinet|mp\b|senator|congress|president|prime minister|policy|legislation|bill|democrat|republican|tory|labour|reform|whitehall)\b', re.I)),
-    ('War & Conflict', re.compile(r'\b(?:war|military|troops|missile|ceasefire|nato|bombed|airstrike|invasion|occupation|terror|isis|hamas|ukraine|russia|gaza|casualties|frontline)\b', re.I)),
-    ('Crime & Justice', re.compile(r'\b(?:murder|killed|arrested|convicted|sentenced|fraud|theft|scam|gang|police|court|verdict|plea|trial|inquest|investigation|shooting|stabbing|assault)\b', re.I)),
-    ('Health',       re.compile(r'\b(?:hospital|nhs|cancer|mental health|drug|vaccine|disease|medical|patient|health|treatment|clinical|gp|surgery|pandemic|outbreak|virus)\b', re.I)),
-    ('Economy',      re.compile(r'\b(?:inflation|gdp|recession|bank|interest rate|mortgage|housing|wages|cost of living|economy|market|budget|tax|trade|tariff|investment|growth|poverty)\b', re.I)),
-    ('Environment',  re.compile(r'\b(?:climate|carbon|emissions|flood|wildfire|energy|fossil|renewable|solar|wind farm|green|biodiversity|extinction|deforestation|pollution|net zero)\b', re.I)),
-    ('Technology',   re.compile(r'\b(?:\bai\b|artificial intelligence|algorithm|data breach|cybersecurity|hack|social media|surveillance|tech|digital|robot|automation|software|silicon)\b', re.I)),
-    ('Education',    re.compile(r'\b(?:school|university|college|students|teacher|ofsted|exam|curriculum|degree|graduate|tuition|literacy|academy)\b', re.I)),
-    ('Human Rights', re.compile(r'\b(?:rights|protest|discrimination|equality|refugee|asylum|immigrant|freedom|civil liberties|oppression|jim crow|voter suppression|decimate)\b', re.I)),
+    ('Politics',      re.compile(
+        r'\b(?:election|parliament|government|party|vote[sd]?|voting|minister|cabinet|mp|senator|'
+        r'congress|president|prime minister|policy|legislation|bill|democrat|republican|tory|labour|'
+        r'reform|whitehall|chancellor|budget|keir|starmer|sunak|trump|biden|harris|macron|'
+        r'political|politician|campaig|referendum|ballot|constituency|downing street)\b', re.I)),
+    ('War & Conflict', re.compile(
+        r'\b(?:war|military|troops|missile|ceasefire|nato|bomb|airstrike|invasion|occupation|'
+        r'terror|isis|hamas|ukraine|russia|gaza|israel|casualt|frontline|weapon|drone|sanction|'
+        r'siege|hostage|conflict|armed|peacekeep|battalion|offensive|attack)\b', re.I)),
+    ('Crime & Justice', re.compile(
+        r'\b(?:murder|killed|kill|arrested|convicted|sentenced|fraud|theft|scam|gang|police|'
+        r'court|verdict|plea|trial|inquest|investigation|shooting|stabbing|assault|rape|'
+        r'prison|jailed|custody|criminal|suspect|charged|prosecut|officer|knife|gun)\b', re.I)),
+    ('Health',        re.compile(
+        r'\b(?:hospital|nhs|cancer|mental health|drug|vaccine|disease|medical|patient|health|'
+        r'treatment|clinical|gp|surgery|pandemic|outbreak|virus|drug|medicine|obesity|'
+        r'dementia|stroke|diabetes|ambulance|a&e|emergency|wellbeing|pharmaceutical)\b', re.I)),
+    ('Economy',       re.compile(
+        r'\b(?:inflation|gdp|recession|bank|interest rate|mortgage|housing|wages|cost of living|'
+        r'economy|market|budget|tax|trade|tariff|investment|growth|poverty|unemployment|'
+        r'price|earn|salary|pension|debt|deficit|sterling|pound|dollar|oil|energy bill)\b', re.I)),
+    ('Environment',   re.compile(
+        r'\b(?:climate|carbon|emission|flood|wildfire|energy|fossil|renewable|solar|wind|'
+        r'green|biodiversity|extinction|deforest|pollution|net zero|plastic|ocean|species|'
+        r'drought|storm|heatwave|glacier|coal|gas|nuclear|sustainability)\b', re.I)),
+    ('Technology',    re.compile(
+        r'\b(?:artificial intelligence|\bai\b|algorithm|data breach|cybersecurity|hack|'
+        r'social media|surveillance|tech|digital|robot|automation|software|silicon|'
+        r'smartphone|app|internet|cloud|quantum|chip|semiconductor|deepfake|openai|'
+        r'google|microsoft|apple|meta|amazon|elon|musk|twitter|x\.com)\b', re.I)),
+    ('Education',     re.compile(
+        r'\b(?:school|university|college|student|teacher|ofsted|exam|curriculum|degree|'
+        r'graduate|tuition|literacy|academy|pupil|headteacher|admissions|league table|sats)\b', re.I)),
+    ('Human Rights',  re.compile(
+        r'\b(?:rights|protest|discriminat|equality|refugee|asylum|immigrant|freedom|'
+        r'civil liberties|oppression|jim crow|voter suppression|decimate|racism|racist|'
+        r'genocide|apartheid|detention|deportation|diversity|inclusion|lgbt|trans|gender)\b', re.I)),
 ]
 
 
@@ -155,6 +183,22 @@ def _get_topic(title):
             return topic
     return 'General'
 
+
+# Known paywalled domains — archive.is link shown alongside original
+_PAYWALL_DOMAINS = frozenset({
+    'nikkei.com', 'asia.nikkei.com',
+    'ft.com',
+    'thetimes.co.uk', 'thetimes.com',
+    'telegraph.co.uk',
+    'newstatesman.com',
+    'economist.com',
+    'bloomberg.com',
+    'wsj.com',
+    'washingtonpost.com',
+    'nytimes.com',
+    'theathletic.com',
+    'theinformation.com',
+})
 
 # Domains that always score maximum positive — no pipeline, no filters
 _PINNED_PRO = frozenset({
@@ -502,6 +546,7 @@ def _fetch_one(name, url, bias, results):
                 'opinion':      flags['opinion'],
                 'clickbait':    flags['clickbait'],
                 'topic':        _get_topic(title),
+                'paywalled':    any(pd in link for pd in _PAYWALL_DOMAINS),
             }
             label = _classify(compound)
             if label == 'pro' and (flags['sarcasm_risk'] or flags['framing_risk']):
