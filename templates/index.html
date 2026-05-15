@@ -580,6 +580,70 @@
   }
   .pill.paywall:hover{color:var(--ink);border-color:var(--ink-2)}
 
+  /* ───── Shoutout ───── */
+  .shoutout-section{
+    margin-top:32px;padding:20px 24px;background:var(--card);border:1px solid var(--rule);
+    border-top:3px solid var(--pos-deep);
+  }
+  .shoutout-label{
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;
+    font-weight:700;color:var(--pos-deep);margin-bottom:10px;
+  }
+  .shoutout-pitch{
+    font-family:var(--serif);font-size:15px;font-style:italic;font-weight:300;
+    color:var(--ink-2);line-height:1.45;margin-bottom:14px;
+    font-variation-settings:"opsz" 16;
+  }
+  .shoutout-form{display:flex;flex-direction:column;gap:8px}
+  .shoutout-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .shoutout-input{
+    background:var(--paper-2);border:1px solid var(--rule);
+    font-family:var(--sans);font-size:13px;color:var(--ink);
+    padding:10px 12px;outline:none;width:100%;
+  }
+  .shoutout-input:focus{border-color:var(--pos-deep)}
+  .shoutout-input::placeholder{color:var(--ink-4)}
+  .shoutout-textarea{
+    background:var(--paper-2);border:1px solid var(--rule);
+    font-family:var(--serif);font-size:14px;color:var(--ink);
+    padding:10px 12px;outline:none;width:100%;resize:none;
+    min-height:72px;line-height:1.5;
+    font-variation-settings:"opsz" 14;
+  }
+  .shoutout-textarea:focus{border-color:var(--pos-deep)}
+  .shoutout-textarea::placeholder{color:var(--ink-4);font-style:italic}
+  .shoutout-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .shoutout-price{
+    font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.06em;
+  }
+  .shoutout-price strong{color:var(--pos-deep)}
+  .shoutout-btn{
+    appearance:none;background:var(--pos-deep);border:none;
+    color:var(--paper);font-family:var(--sans);font-size:10.5px;letter-spacing:.18em;
+    text-transform:uppercase;font-weight:700;padding:10px 20px;cursor:pointer;
+    transition:opacity .15s;white-space:nowrap;
+  }
+  .shoutout-btn:hover{opacity:.88}
+  .shoutout-btn:disabled{opacity:.5;cursor:not-allowed}
+  .shoutout-offline{font-family:var(--sans);font-size:11px;color:var(--ink-4);letter-spacing:.1em}
+  /* Admin inbox */
+  .shoutout-inbox{margin-top:40px;padding-top:24px;border-top:1px solid var(--ink)}
+  .shoutout-msg{
+    padding:16px 0;border-bottom:1px solid var(--rule);
+    display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;
+  }
+  .shoutout-msg:last-child{border-bottom:none}
+  .shoutout-msg-body{font-family:var(--serif);font-size:16px;line-height:1.45;color:var(--ink);font-weight:400}
+  .shoutout-msg-from{font-family:var(--sans);font-size:11px;color:var(--ink-3);margin-top:6px}
+  .reply-btn{
+    appearance:none;background:transparent;border:1px solid var(--rule);
+    color:var(--ink-3);font-family:var(--sans);font-size:10px;letter-spacing:.16em;
+    text-transform:uppercase;font-weight:600;padding:7px 12px;cursor:pointer;
+    white-space:nowrap;transition:background .15s,color .15s;
+  }
+  .reply-btn:hover{background:var(--pos-deep);border-color:var(--pos-deep);color:var(--paper)}
+  @media(max-width:560px){.shoutout-row{grid-template-columns:1fr}}
+
   /* ───── Your Signal (geo-feed) ───── */
   .geo-section{
     margin-top:36px;padding-top:24px;border-top:1px solid var(--rule);
@@ -1591,6 +1655,50 @@
     </div>
   </div>
 
+  <!-- ───── Shoutout to the editor ───── -->
+  <div id="shoutout">
+    <div class="shoutout-section">
+      <div class="shoutout-label">Direct line to the editor</div>
+      <p class="shoutout-pitch">Got a story tip, a correction, a thought? Send it direct. Every message is read personally by The Architect.</p>
+      {% if stripe_live %}
+      <div class="shoutout-form" id="shoutout-form">
+        <div class="shoutout-row">
+          <input class="shoutout-input" id="so-name"  placeholder="Your name (optional)"  type="text" maxlength="80"/>
+          <input class="shoutout-input" id="so-email" placeholder="Email for a reply (optional)" type="email" maxlength="120"/>
+        </div>
+        <textarea class="shoutout-textarea" id="so-msg" placeholder="Your message — 280 characters max" maxlength="280"></textarea>
+        <div class="shoutout-footer">
+          <span class="shoutout-price"><strong>£1.50</strong> &nbsp;·&nbsp; goes direct to his pocket after ~22p Stripe fee</span>
+          <button class="shoutout-btn" id="so-btn" type="button">Send it — £1.50</button>
+        </div>
+      </div>
+      {% else %}
+      <p class="shoutout-offline">Payment not yet configured — check back soon.</p>
+      {% endif %}
+    </div>
+    {% if admin and shoutouts %}
+    <div class="shoutout-inbox">
+      <div class="section-head">
+        <h2 class="ttl">Inbox <em>unread</em></h2>
+        <span class="meta">{{ shoutouts|length }} messages</span>
+      </div>
+      {% for s in shoutouts %}
+      <div class="shoutout-msg" id="smsg-{{ s.id }}">
+        <div>
+          <div class="shoutout-msg-body">{{ s.message }}</div>
+          <div class="shoutout-msg-from">
+            {% if s.sender_name %}{{ s.sender_name }}{% else %}Anonymous{% endif %}
+            {% if s.sender_email %} · <a href="mailto:{{ s.sender_email }}" style="color:var(--pos-deep)">{{ s.sender_email }}</a>{% endif %}
+            · {{ s.created_at }}
+          </div>
+        </div>
+        <button class="reply-btn" onclick="markReplied({{ s.id }})">Done</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
   {% if admin and unfulfilled_sponsors %}
   <section class="sponsor-log">
     <div class="section-head">
@@ -2188,6 +2296,37 @@
     .then(r=>r.json()).then(d=>{
       if(d.error){ if(!handleAuthError(d)) alert(d.error); return; }
       location.reload();
+    });
+  }
+
+  /* ───── Shoutout ───── */
+  (function(){
+    const btn = document.getElementById('so-btn');
+    if (btn) btn.addEventListener('click', sendShoutout);
+  })();
+
+  function sendShoutout(){
+    const msg   = (document.getElementById('so-msg')?.value  || '').trim();
+    const name  = (document.getElementById('so-name')?.value || '').trim();
+    const email = (document.getElementById('so-email')?.value|| '').trim();
+    const btn   = document.getElementById('so-btn');
+    if (!msg){ alert('Write something first.'); return; }
+    btn.disabled = true; btn.textContent = 'Opening payment…';
+    fetch('/api/shoutout/checkout',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg, name, email})})
+    .then(r=>r.json()).then(d=>{
+      if (d.error){ alert(d.error); btn.disabled=false; btn.textContent='Send it — £1.50'; return; }
+      window.location.href = d.url;
+    }).catch(()=>{ btn.disabled=false; btn.textContent='Send it — £1.50'; });
+  }
+
+  function markReplied(id){
+    const row = document.getElementById('smsg-' + id);
+    fetch('/api/shoutout/' + id + '/reply',{method:'POST'})
+    .then(r=>r.json()).then(d=>{
+      if(d.error){ if(!handleAuthError(d)) alert(d.error); return; }
+      if(row){ row.style.opacity='0.3'; row.querySelector('.reply-btn').textContent='Replied'; }
     });
   }
 

@@ -16,6 +16,7 @@ import feedparser
 import psycopg2
 import psycopg2.extras
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import stripe
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -429,6 +430,18 @@ def _init_db():
                 """)
                 cur.execute("ALTER TABLE ads ADD COLUMN IF NOT EXISTS image_url TEXT")
                 cur.execute("""
+                    CREATE TABLE IF NOT EXISTS shoutouts (
+                        id              SERIAL PRIMARY KEY,
+                        message         TEXT NOT NULL,
+                        sender_name     TEXT,
+                        sender_email    TEXT,
+                        stripe_session  TEXT,
+                        paid            BOOLEAN DEFAULT FALSE,
+                        replied         BOOLEAN DEFAULT FALSE,
+                        created_at      TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS ad_impressions (
                         id      SERIAL PRIMARY KEY,
                         ad_id   INTEGER,
@@ -796,6 +809,9 @@ def index():
     d['admin_token']          = ''
     d['sponsors']             = _get_sponsors(limit=12) if _DB_URL else []
     d['unfulfilled_sponsors'] = _get_sponsors(limit=50, unfulfilled_only=True) if (_DB_URL and d['admin']) else []
+    d['shoutouts']            = _get_shoutouts(limit=20, unpaid=True) if (_DB_URL and d['admin']) else []
+    d['stripe_live']          = bool(_STRIPE_KEY)
+    d['stripe_pub']           = _STRIPE_PUB
     d['opinion']              = _get_opinion()
     d['traffic']              = _get_traffic() if d['admin'] else None
     d['total_visitors']       = _get_total_visitors() if _DB_URL else 0
@@ -1557,6 +1573,167 @@ def api_opinion_clear():
         log.error(f'opinion clear failed: {exc}')
         return jsonify({'error': 'Database error'}), 500
     return jsonify({'status': 'cleared'})
+
+
+# ── Shoutouts (Stripe) ───────────────────────────────────────────────────────
+
+_STRIPE_KEY     = os.environ.get('STRIPE_SECRET_KEY', '')
+_STRIPE_PUB     = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+_STRIPE_WEBHOOK = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+_SHOUTOUT_PRICE = 150  # pence (£1.50)
+
+if _STRIPE_KEY:
+    stripe.api_key = _STRIPE_KEY
+
+
+def _get_shoutouts(limit=20, unpaid=False):
+    try:
+        with _db_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                if unpaid:
+                    cur.execute(
+                        "SELECT * FROM shoutouts WHERE paid=TRUE AND replied=FALSE ORDER BY created_at DESC LIMIT %s",
+                        (limit,)
+                    )
+                else:
+                    cur.execute(
+                        "SELECT * FROM shoutouts WHERE paid=TRUE ORDER BY created_at DESC LIMIT %s",
+                        (limit,)
+                    )
+                rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if hasattr(d.get('created_at'), 'strftime'):
+                d['created_at'] = d['created_at'].strftime('%d %b %Y %H:%M')
+            result.append(d)
+        return result
+    except Exception as exc:
+        log.error(f'_get_shoutouts: {exc}')
+        return []
+
+
+@app.route('/api/shoutout/checkout', methods=['POST'])
+def api_shoutout_checkout():
+    if not _STRIPE_KEY:
+        return jsonify({'error': 'Payment not configured yet'}), 503
+    data         = request.get_json(silent=True) or {}
+    message      = (data.get('message') or '').strip()[:280]
+    sender_name  = (data.get('name') or '').strip()[:80]
+    sender_email = (data.get('email') or '').strip()[:120]
+    if not message:
+        return jsonify({'error': 'Message required'}), 400
+    try:
+        base = request.host_url.rstrip('/')
+        checkout = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'gbp',
+                    'product_data': {
+                        'name': 'MeDea — Direct message to The Architect',
+                        'description': 'Your message is delivered personally. Every one is read.',
+                    },
+                    'unit_amount': _SHOUTOUT_PRICE,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=base + '/shoutout/success?sid={CHECKOUT_SESSION_ID}',
+            cancel_url=base + '/#shoutout',
+            metadata={
+                'message':      message,
+                'sender_name':  sender_name,
+                'sender_email': sender_email,
+            },
+        )
+        # Pre-store unpaid record
+        if _DB_URL:
+            with _db_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO shoutouts (message, sender_name, sender_email, stripe_session, paid)
+                        VALUES (%s,%s,%s,%s,FALSE)
+                    """, (message, sender_name or None, sender_email or None, checkout.id))
+                conn.commit()
+        return jsonify({'url': checkout.url})
+    except Exception as exc:
+        log.error(f'Stripe checkout: {exc}')
+        return jsonify({'error': 'Payment error — try again'}), 500
+
+
+@app.route('/shoutout/success')
+def shoutout_success():
+    sid = request.args.get('sid', '')
+    # Confirm payment directly (belt + braces alongside webhook)
+    if sid and _STRIPE_KEY and _DB_URL:
+        try:
+            cs = stripe.checkout.Session.retrieve(sid)
+            if cs.payment_status == 'paid':
+                with _db_conn() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            'UPDATE shoutouts SET paid=TRUE WHERE stripe_session=%s',
+                            (sid,)
+                        )
+                    conn.commit()
+        except Exception as exc:
+            log.warning(f'Shoutout confirm: {exc}')
+    return render_template('shoutout_success.html')
+
+
+@app.route('/webhook/stripe', methods=['POST'])
+def webhook_stripe():
+    payload = request.get_data()
+    sig     = request.headers.get('Stripe-Signature', '')
+    if not _STRIPE_WEBHOOK:
+        return jsonify({'status': 'no secret'}), 200
+    try:
+        event = stripe.Webhook.construct_event(payload, sig, _STRIPE_WEBHOOK)
+    except Exception:
+        return jsonify({'error': 'Bad signature'}), 400
+    if event['type'] == 'checkout.session.completed':
+        cs = event['data']['object']
+        if cs.get('payment_status') == 'paid' and _DB_URL:
+            try:
+                meta = cs.get('metadata', {})
+                with _db_conn() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            'UPDATE shoutouts SET paid=TRUE WHERE stripe_session=%s',
+                            (cs['id'],)
+                        )
+                        # If record doesn't exist yet (webhook faster than redirect)
+                        if cur.rowcount == 0:
+                            cur.execute("""
+                                INSERT INTO shoutouts (message, sender_name, sender_email, stripe_session, paid)
+                                VALUES (%s,%s,%s,%s,TRUE)
+                            """, (
+                                meta.get('message',''),
+                                meta.get('sender_name') or None,
+                                meta.get('sender_email') or None,
+                                cs['id'],
+                            ))
+                    conn.commit()
+                log.info(f"Shoutout paid: {cs['id']}")
+            except Exception as exc:
+                log.error(f'Stripe webhook DB: {exc}')
+    return jsonify({'status': 'ok'}), 200
+
+
+@app.route('/api/shoutout/<int:shoutout_id>/reply', methods=['POST'])
+def api_shoutout_reply(shoutout_id):
+    if not _admin_check():
+        return _auth_error()
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('UPDATE shoutouts SET replied=TRUE WHERE id=%s', (shoutout_id,))
+            conn.commit()
+    except Exception as exc:
+        log.error(f'Shoutout reply: {exc}')
+        return jsonify({'error': 'DB error'}), 500
+    return jsonify({'status': 'ok'})
 
 
 # ── Sponsor webhooks ──────────────────────────────────────────────────────────

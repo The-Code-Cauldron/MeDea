@@ -4,3 +4,4 @@ vaderSentiment
 requests
 certifi
 psycopg2-binary
+stripe
