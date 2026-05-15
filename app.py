@@ -60,10 +60,13 @@ FEEDS = [
     ('Brasil Wire',         'https://www.brasilwire.com/feed/',                     'Latin America', 'https://www.brasilwire.com'),
     ('Middle East Monitor', 'https://www.middleeastmonitor.com/feed/',               'Middle East',   'https://www.middleeastmonitor.com'),
     ('Mail & Guardian',     'https://mg.co.za/feed/',                               'Africa',        'https://mg.co.za'),
+    ('The Register',        'https://www.theregister.com/headlines.atom',           'Technology',    'https://www.theregister.com'),
+    ('Carbon Brief',        'https://www.carbonbrief.org/feed/',                    'Environment',   'https://www.carbonbrief.org'),
+    ('Al-Monitor',          'https://www.al-monitor.com/rss',                       'Middle East',   'https://www.al-monitor.com'),
 ]
 
-PRO_SOURCE_CAP      = 3
-INVESTIGATIVE_CAP   = 5
+PRO_SOURCE_CAP      = 4
+INVESTIGATIVE_CAP   = 6
 
 INVESTIGATIVE_SOURCES = frozenset({
     'Declassified UK',
@@ -72,9 +75,10 @@ INVESTIGATIVE_SOURCES = frozenset({
     'The Canary',
     'ProPublica',
     'The Intercept',
+    'Carbon Brief',
 })
 
-REFRESH_INTERVAL    = 3600
+REFRESH_INTERVAL    = 1800
 POSITIVE_THRESHOLD  =  0.05
 NEGATIVE_THRESHOLD  = -0.05
 
@@ -292,6 +296,58 @@ def _quality_flags(title, url, compound):
         'junk':          junk,
         'framing_risk':  framing_risk,
     }
+
+
+# ── Feed quality utilities ────────────────────────────────────────────────────
+
+_STOPWORDS = frozenset({
+    'the','a','an','in','on','at','to','for','of','and','or','is','are',
+    'was','were','has','have','had','with','from','by','as','its','it',
+    'be','been','but','not','this','that','they','he','she','we','you',
+    'after','over','how','who','what','when','where','why','could','says',
+    'said','will','new','up','out','over','into','about','more','than','all',
+})
+
+
+def _title_words(title):
+    return set(title.lower().split()) - _STOPWORDS
+
+
+def _deduplicate(items):
+    seen, result = [], []
+    for item in items:
+        words = _title_words(item['title'])
+        dup = False
+        for s in seen:
+            if words and s:
+                overlap = len(words & s) / len(words | s)
+                if overlap >= 0.48:
+                    dup = True
+                    break
+        if not dup:
+            seen.append(words)
+            result.append(item)
+    return result
+
+
+def _ago(ts):
+    if not ts:
+        return ''
+    diff = time.time() - ts
+    if diff < 60:
+        return 'just now'
+    if diff < 3600:
+        return f'{int(diff/60)}m ago'
+    if diff < 86400:
+        return f'{int(diff/3600)}h ago'
+    return f'{int(diff/86400)}d ago'
+
+
+def _recency_weight(pub_ts):
+    if not pub_ts:
+        return 0.75
+    age_h = (time.time() - pub_ts) / 3600
+    return max(0.3, 1.0 - age_h / 36)
 
 
 # ── Main state ───────────────────────────────────────────────────────────────
@@ -525,6 +581,11 @@ def _fetch_one(name, url, bias, results):
             if not title:
                 continue
             link = (entry.get('link') or '').strip()
+            try:
+                pp = entry.get('published_parsed') or entry.get('updated_parsed')
+                pub_ts = time.mktime(pp) if pp else None
+            except Exception:
+                pub_ts = None
             vs = _analyzer.polarity_scores(title)
             compound = round(vs['compound'], 3)
             if _FORCE_NEGATIVE_RE.search(title):
@@ -547,6 +608,8 @@ def _fetch_one(name, url, bias, results):
                 'clickbait':    flags['clickbait'],
                 'topic':        _get_topic(title),
                 'paywalled':    any(pd in link for pd in _PAYWALL_DOMAINS),
+                'pub_ts':       pub_ts,
+                'pub_ago':      _ago(pub_ts),
             }
             label = _classify(compound)
             if label == 'pro' and (flags['sarcasm_risk'] or flags['framing_risk']):
@@ -603,19 +666,25 @@ def _fetch():
             'website': website,
         }
 
+    # Deduplicate across all pools
+    all_pro     = _deduplicate(all_pro)
+    all_con     = _deduplicate(all_con)
+    all_flagged = _deduplicate(all_flagged)
+
     scored = len(all_pro) + len(all_con)
     score = round(len(all_pro) / scored * 100) if scored else None
     log.info(f'Fetch complete — Pro:{len(all_pro)} Con:{len(all_con)} Flagged:{len(all_flagged)} Score:{score}')
 
-    all_pro.sort(key=lambda x: x['compound'], reverse=True)
+    # Sort pro by recency-weighted compound (freshest high-quality stories first)
+    all_pro.sort(key=lambda x: x['compound'] * _recency_weight(x.get('pub_ts')), reverse=True)
     all_con.sort(key=lambda x: x['compound'])
 
     with _lock:
         _state.update({
             'score':         score,
-            'pro':           all_pro[:8],
-            'con':           all_con[:8],
-            'flagged':       all_flagged[:6],
+            'pro':           all_pro[:20],
+            'con':           all_con[:14],
+            'flagged':       all_flagged[:10],
             'sources':       sources,
             'last_updated':  datetime.now(timezone.utc).strftime('%d %b %Y %H:%M UTC'),
             'pro_count':     len(all_pro),
