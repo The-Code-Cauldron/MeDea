@@ -118,6 +118,19 @@ _PINNED_PRO = frozenset({
     'the-architect-neo.github.io',
 })
 
+# Framing risk — headline scores positive but contains a structural falsehood
+# Moves pro stories to Held for editorial judgement. Extend as patterns emerge.
+_FRAMING_RISK_RE = re.compile(
+    # Non-European countries in Eurovision
+    r'\b(?:canada|australia|new zealand|japan|china|usa|united states|brazil|india|'
+    r'south korea|kazakhstan|kosovo)\b.{0,80}\beurovision\b'
+    r'|\beurovision\b.{0,80}\b(?:canada|australia|new zealand|japan|china|usa|'
+    r'united states|brazil|india|south korea|kazakhstan|kosovo)\b'
+    # Add new patterns below — one per line, pipe-separated
+    ,
+    re.IGNORECASE,
+)
+
 _PRESS_RELEASE_RE = re.compile(
     r'\b(announces?|appoints?|showcases?|unveils?|rebrands?|'
     r'quarterly (?:dividend|earnings|results)|'
@@ -148,6 +161,7 @@ def _quality_flags(title, url, compound):
     satire        = False
     press_release = False
     junk          = False
+    framing_risk  = False
     tl = title.lower().strip()
 
     try:
@@ -179,6 +193,9 @@ def _quality_flags(title, url, compound):
     if any(tl.startswith(m) for m in _OPINION_STARTERS):
         opinion = True
 
+    if _FRAMING_RISK_RE.search(title):
+        framing_risk = True
+
     return {
         'sarcasm_risk':  sarcasm_risk,
         'opinion':       opinion,
@@ -186,6 +203,7 @@ def _quality_flags(title, url, compound):
         'satire':        satire,
         'press_release': press_release,
         'junk':          junk,
+        'framing_risk':  framing_risk,
     }
 
 
@@ -404,11 +422,12 @@ def _fetch_one(name, url, bias, results):
                 'compound':     compound,
                 'url':          link,
                 'sarcasm_risk': flags['sarcasm_risk'],
+                'framing_risk': flags['framing_risk'],
                 'opinion':      flags['opinion'],
                 'clickbait':    flags['clickbait'],
             }
             label = _classify(compound)
-            if label == 'pro' and flags['sarcasm_risk']:
+            if label == 'pro' and (flags['sarcasm_risk'] or flags['framing_risk']):
                 flagged.append(item)
             elif label == 'pro':
                 pro.append(item)

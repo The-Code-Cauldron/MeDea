@@ -313,6 +313,7 @@
     font-weight:700;padding:2px 7px;border-radius:2px;white-space:nowrap;
   }
   .pill.sarcasm  {color:var(--flag);background:var(--flag-soft)}
+  .pill.framing  {color:var(--neg);background:var(--neg-soft)}
   .pill.opinion  {color:var(--opinion-fg); background:var(--opinion-bg)}
   .pill.clickbait{color:var(--neg); background:var(--neg-soft)}
 
@@ -786,6 +787,7 @@
                 <span style="color:var(--ink-4)">&#183;</span>
                 <span class="ts">{{ d.submitted_at }}</span>
                 {% if d.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
+                {% if d.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
                 {% if d.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
                 {% if d.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
               </div>
@@ -938,6 +940,7 @@
                   <span class="sep">·</span>
                   <span class="score">{{ "%+.2f"|format(h.compound) }}</span>
                   {% if h.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
+                  {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
                   {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
                   {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
                 </div>
@@ -969,6 +972,7 @@
                   <span class="sep">·</span>
                   <span class="score" style="color:var(--flag)">{{ "%+.2f"|format(h.compound) }}</span>
                   {% if h.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
+                  {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
                   {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
                   {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
                 </div>
@@ -1164,6 +1168,7 @@
     const score = (d.compound>=0?'+':'') + parseFloat(d.compound).toFixed(2);
     const pills = [
       d.sarcasm_risk?'<span class="pill sarcasm">Sarcasm?</span>':'',
+      d.framing_risk?'<span class="pill framing">Framing?</span>':'',
       d.opinion     ?'<span class="pill opinion">Opinion</span>':'',
       d.clickbait   ?'<span class="pill clickbait">Clickbait</span>':'',
     ].join('');
