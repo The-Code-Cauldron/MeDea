@@ -135,6 +135,27 @@ _FORCE_NEGATIVE_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Topic tagging — first match wins
+_TOPIC_RULES = [
+    ('Politics',     re.compile(r'\b(?:election|parliament|government|party|vote[sd]?|minister|cabinet|mp\b|senator|congress|president|prime minister|policy|legislation|bill|democrat|republican|tory|labour|reform|whitehall)\b', re.I)),
+    ('War & Conflict', re.compile(r'\b(?:war|military|troops|missile|ceasefire|nato|bombed|airstrike|invasion|occupation|terror|isis|hamas|ukraine|russia|gaza|casualties|frontline)\b', re.I)),
+    ('Crime & Justice', re.compile(r'\b(?:murder|killed|arrested|convicted|sentenced|fraud|theft|scam|gang|police|court|verdict|plea|trial|inquest|investigation|shooting|stabbing|assault)\b', re.I)),
+    ('Health',       re.compile(r'\b(?:hospital|nhs|cancer|mental health|drug|vaccine|disease|medical|patient|health|treatment|clinical|gp|surgery|pandemic|outbreak|virus)\b', re.I)),
+    ('Economy',      re.compile(r'\b(?:inflation|gdp|recession|bank|interest rate|mortgage|housing|wages|cost of living|economy|market|budget|tax|trade|tariff|investment|growth|poverty)\b', re.I)),
+    ('Environment',  re.compile(r'\b(?:climate|carbon|emissions|flood|wildfire|energy|fossil|renewable|solar|wind farm|green|biodiversity|extinction|deforestation|pollution|net zero)\b', re.I)),
+    ('Technology',   re.compile(r'\b(?:\bai\b|artificial intelligence|algorithm|data breach|cybersecurity|hack|social media|surveillance|tech|digital|robot|automation|software|silicon)\b', re.I)),
+    ('Education',    re.compile(r'\b(?:school|university|college|students|teacher|ofsted|exam|curriculum|degree|graduate|tuition|literacy|academy)\b', re.I)),
+    ('Human Rights', re.compile(r'\b(?:rights|protest|discrimination|equality|refugee|asylum|immigrant|freedom|civil liberties|oppression|jim crow|voter suppression|decimate)\b', re.I)),
+]
+
+
+def _get_topic(title):
+    for topic, pattern in _TOPIC_RULES:
+        if pattern.search(title):
+            return topic
+    return 'General'
+
+
 # Domains that always score maximum positive — no pipeline, no filters
 _PINNED_PRO = frozenset({
     'the-architect-neo.github.io',
@@ -480,6 +501,7 @@ def _fetch_one(name, url, bias, results):
                 'framing_risk': flags['framing_risk'],
                 'opinion':      flags['opinion'],
                 'clickbait':    flags['clickbait'],
+                'topic':        _get_topic(title),
             }
             label = _classify(compound)
             if label == 'pro' and (flags['sarcasm_risk'] or flags['framing_risk']):
