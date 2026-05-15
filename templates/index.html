@@ -384,7 +384,9 @@
   .src-name .nm{
     font-family:var(--serif);font-weight:500;font-size:16px;color:var(--ink);
     letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    text-decoration:none;
   }
+  .src-name .nm:hover{color:var(--pos-deep)}
   .src-name .b{
     font-family:var(--sans);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
     color:var(--ink-3);font-weight:600;flex-shrink:0;
@@ -847,7 +849,7 @@
       {% set tot = (p + c + f) %}
       <div class="src-row">
         <div class="src-name">
-          <span class="nm">{{ name }}</span>
+          <a class="nm" href="{{ s.website }}" target="_blank" rel="noopener">{{ name }}</a>
           <span class="b">{{ s.bias or 'N/A' }}</span>
         </div>
         <div class="src-bar">

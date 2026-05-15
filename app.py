@@ -23,24 +23,26 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 
-# (name, url, bias_label)
+# (name, rss_url, bias_label, website)
 FEEDS = [
-    ('The Guardian',                    'https://www.theguardian.com/world/rss',                     'Left'),
-    ('Sky News',                        'https://feeds.skynews.com/feeds/rss/home.xml',              'Right'),
-    ('The Independent',                 'https://www.independent.co.uk/rss',                         'Centre-Left'),
-    ('Al Jazeera',                      'https://www.aljazeera.com/xml/rss/all.xml',                 'Global'),
-    ('UnHerd',                          'https://unherd.com/feed/',                                  'Independent'),
-    ('Byline Times',                    'https://bylinetimes.com/feed/',                             'Independent'),
-    ('The Conversation UK',             'https://theconversation.com/uk/articles.atom',              'Academic'),
-    ('Positive News',                   'https://www.positive.news/feed/',                           'Independent'),
-    ('New Statesman',                   'https://www.newstatesman.com/feed/',                        'Centre-Left'),
-    ('Middle East Eye',                 'https://www.middleeasteye.net/rss',                         'Global'),
-    ('Declassified UK',                 'https://declassifieduk.org/feed/',                          'Investigative'),
-    ('Novara Media',                    'https://novaramedia.com/feed/',                             'Left'),
-    ('Bureau of Investigative Journalism', 'https://www.thebureauinvestigates.com/feed',             'Investigative'),
-    ('openDemocracy',                   'https://www.opendemocracy.net/en/rss.xml',                  'Investigative'),
-    ('Bellingcat',                      'https://www.bellingcat.com/feed/',                          'Investigative'),
-    ('The Canary',                      'https://thecanary.co/feed/',                               'Investigative'),
+    ('The Guardian',        'https://www.theguardian.com/world/rss',                'Left',          'https://www.theguardian.com'),
+    ('Sky News',            'https://feeds.skynews.com/feeds/rss/home.xml',         'Right',         'https://news.sky.com'),
+    ('The Independent',     'https://www.independent.co.uk/rss',                    'Centre-Left',   'https://www.independent.co.uk'),
+    ('Al Jazeera',          'https://www.aljazeera.com/xml/rss/all.xml',            'Global',        'https://www.aljazeera.com'),
+    ('UnHerd',              'https://unherd.com/feed/',                             'Independent',   'https://unherd.com'),
+    ('Byline Times',        'https://bylinetimes.com/feed/',                        'Independent',   'https://bylinetimes.com'),
+    ('The Conversation UK', 'https://theconversation.com/uk/articles.atom',         'Academic',      'https://theconversation.com/uk'),
+    ('Positive News',       'https://www.positive.news/feed/',                      'Independent',   'https://www.positive.news'),
+    ('New Statesman',       'https://www.newstatesman.com/feed/',                   'Centre-Left',   'https://www.newstatesman.com'),
+    ('Middle East Eye',     'https://www.middleeasteye.net/rss',                    'Global',        'https://www.middleeasteye.net'),
+    ('Declassified UK',     'https://declassifieduk.org/feed/',                     'Investigative', 'https://declassifieduk.org'),
+    ('Novara Media',        'https://novaramedia.com/feed/',                        'Left',          'https://novaramedia.com'),
+    ('openDemocracy',       'https://opendemocracy.net/feed/',                      'Investigative', 'https://www.opendemocracy.net'),
+    ('Bellingcat',          'https://www.bellingcat.com/feed/',                     'Investigative', 'https://www.bellingcat.com'),
+    ('The Canary',          'https://thecanary.co/feed/',                           'Investigative', 'https://thecanary.co'),
+    ('ProPublica',          'https://feeds.propublica.org/propublica/main',         'Investigative', 'https://www.propublica.org'),
+    ('The Intercept',       'https://theintercept.com/feed/?rss',                   'Investigative', 'https://theintercept.com'),
+    ('Democracy Now',       'https://www.democracynow.org/democracynow.rss',        'Independent',   'https://www.democracynow.org'),
 ]
 
 PRO_SOURCE_CAP      = 3
@@ -48,10 +50,11 @@ INVESTIGATIVE_CAP   = 5
 
 INVESTIGATIVE_SOURCES = frozenset({
     'Declassified UK',
-    'Bureau of Investigative Journalism',
     'openDemocracy',
     'Bellingcat',
     'The Canary',
+    'ProPublica',
+    'The Intercept',
 })
 
 REFRESH_INTERVAL    = 3600
@@ -374,12 +377,12 @@ def _fetch_one(name, url, bias, results):
 def _fetch():
     with _prog_lock:
         _progress['status'] = 'fetching'
-        _progress['feeds'] = {name: {'status': 'pending', 'count': 0} for name, _, _b in FEEDS}
+        _progress['feeds'] = {name: {'status': 'pending', 'count': 0} for name, _, _b, _w in FEEDS}
 
     results = {}
     threads = [
         threading.Thread(target=_fetch_one, args=(name, url, bias, results), daemon=True)
-        for name, url, bias in FEEDS
+        for name, url, bias, _w in FEEDS
     ]
     for t in threads:
         t.start()
@@ -388,7 +391,7 @@ def _fetch():
 
     all_pro, all_con, all_flagged = [], [], []
     sources = {}
-    for name, _, bias in FEEDS:
+    for name, _, bias, website in FEEDS:
         r = results.get(name, {'pro': [], 'con': [], 'flagged': [], 'error': True, 'bias': bias})
         cap = INVESTIGATIVE_CAP if name in INVESTIGATIVE_SOURCES else PRO_SOURCE_CAP
         capped = sorted(r['pro'], key=lambda x: x['compound'], reverse=True)[:cap]
@@ -401,6 +404,7 @@ def _fetch():
             'flagged': len(r['flagged']),
             'error':   r.get('error', False),
             'bias':    bias,
+            'website': website,
         }
 
     scored = len(all_pro) + len(all_con)
