@@ -287,6 +287,21 @@ def _init_db():
                     ALTER TABLE page_views ADD COLUMN IF NOT EXISTS ip_hash TEXT
                 """)
                 cur.execute("""
+                    CREATE TABLE IF NOT EXISTS ads (
+                        id         SERIAL PRIMARY KEY,
+                        slot       TEXT NOT NULL DEFAULT 'main',
+                        advertiser TEXT,
+                        url        TEXT NOT NULL,
+                        headline   TEXT,
+                        strapline  TEXT,
+                        cta        TEXT,
+                        bg_color   TEXT DEFAULT '#0f0f0f',
+                        accent     TEXT DEFAULT '#c9a84c',
+                        active     BOOLEAN DEFAULT TRUE,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS sponsors (
                         id           SERIAL PRIMARY KEY,
                         platform     TEXT    NOT NULL,
@@ -617,6 +632,7 @@ def index():
     d['opinion']              = _get_opinion()
     d['traffic']              = _get_traffic() if d['admin'] else None
     d['total_visitors']       = _get_total_visitors() if _DB_URL else 0
+    d['ad']                   = _get_ad()
     _log_pageview()
     return render_template('index.html', **d)
 
@@ -688,6 +704,33 @@ def _log_pageview():
             conn.commit()
     except Exception:
         pass
+
+
+_SELF_PROMO = {
+    'advertiser': 'QuantumProtect',
+    'url':        'https://quantumprotection-production.up.railway.app',
+    'headline':   'QuantumProtect',
+    'strapline':  'Post-quantum cryptography. Protect your data against the threats that are already coming.',
+    'cta':        'Explore free →',
+    'bg_color':   '#0f1a2e',
+    'accent':     '#2a5f43',
+    'self_promo': True,
+}
+
+
+def _get_ad():
+    if not _DB_URL:
+        return _SELF_PROMO
+    try:
+        with _db_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT * FROM ads WHERE active=TRUE ORDER BY created_at DESC LIMIT 1"
+                )
+                row = cur.fetchone()
+        return dict(row) if row else _SELF_PROMO
+    except Exception:
+        return _SELF_PROMO
 
 
 def _get_total_visitors():
@@ -920,6 +963,55 @@ self.addEventListener('fetch', e => {
 @app.route('/offline')
 def offline():
     return render_template('offline.html')
+
+
+# ── Ad management ────────────────────────────────────────────────────────────
+
+@app.route('/api/ad', methods=['POST'])
+def api_ad_save():
+    data = request.get_json(silent=True) or {}
+    if not _admin_check(data):
+        return _auth_error()
+    url = data.get('url', '').strip()
+    if not url:
+        return jsonify({'error': 'URL required'}), 400
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('UPDATE ads SET active=FALSE')
+                cur.execute("""
+                    INSERT INTO ads (advertiser, url, headline, strapline, cta, bg_color, accent, active)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,TRUE)
+                """, (
+                    data.get('advertiser',''),
+                    url,
+                    data.get('headline',''),
+                    data.get('strapline',''),
+                    data.get('cta','Visit'),
+                    data.get('bg_color','#0f0f0f'),
+                    data.get('accent','#c9a84c'),
+                ))
+            conn.commit()
+    except Exception as exc:
+        log.error(f'Ad save failed: {exc}')
+        return jsonify({'error': 'Database error'}), 500
+    return jsonify({'status': 'saved'})
+
+
+@app.route('/api/ad/clear', methods=['POST'])
+def api_ad_clear():
+    data = request.get_json(silent=True) or {}
+    if not _admin_check(data):
+        return _auth_error()
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('UPDATE ads SET active=FALSE')
+            conn.commit()
+    except Exception as exc:
+        log.error(f'Ad clear failed: {exc}')
+        return jsonify({'error': 'Database error'}), 500
+    return jsonify({'status': 'cleared'})
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
