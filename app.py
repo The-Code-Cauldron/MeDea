@@ -279,8 +279,12 @@ def _init_db():
                     CREATE TABLE IF NOT EXISTS page_views (
                         id         SERIAL PRIMARY KEY,
                         visited_at TIMESTAMPTZ DEFAULT NOW(),
-                        device     TEXT
+                        device     TEXT,
+                        ip_hash    TEXT
                     )
+                """)
+                cur.execute("""
+                    ALTER TABLE page_views ADD COLUMN IF NOT EXISTS ip_hash TEXT
                 """)
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS sponsors (
@@ -654,15 +658,32 @@ def _login_rate_ok(ip):
         return True
 
 
+def _ip_hash(ip):
+    from datetime import date as _date
+    salt = _date.today().isoformat()
+    return hashlib.sha256(f'{ip}:{salt}'.encode()).hexdigest()[:32]
+
+
 def _log_pageview():
     if not _DB_URL:
         return
     try:
+        ip     = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+        ih     = _ip_hash(ip)
         ua     = (request.headers.get('User-Agent') or '').lower()
-        device = 'mobile' if any(m in ua for m in ('mobile','android','iphone','ipad')) else 'desktop'
+        device = 'mobile' if any(m in ua for m in ('mobile', 'android', 'iphone', 'ipad')) else 'desktop'
         with _db_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute('INSERT INTO page_views (device) VALUES (%s)', (device,))
+                cur.execute("""
+                    INSERT INTO page_views (device, ip_hash)
+                    SELECT %s, %s
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM page_views
+                        WHERE ip_hash = %s
+                        AND device    = %s
+                        AND visited_at >= CURRENT_DATE
+                    )
+                """, (device, ih, ih, device))
             conn.commit()
     except Exception:
         pass
