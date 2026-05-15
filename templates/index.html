@@ -523,9 +523,13 @@
     font-variation-settings:"opsz" 16;
   }
   .dispatch-sponsor a{
-    color:var(--pos-deep);border-bottom:1px solid var(--pos-soft);padding-bottom:1px;
+    display:inline-block;font-style:normal;font-family:var(--sans);
+    font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--paper);background:var(--pos-deep);
+    padding:4px 12px;margin:0 3px;vertical-align:middle;
+    border-bottom:none;transition:background .15s;
   }
-  .dispatch-sponsor a:hover{border-color:var(--pos-deep)}
+  .dispatch-sponsor a:hover{background:var(--pos)}
   /* fee tooltip */
   .fee-tip{position:relative;display:inline}
   .fee-tip-box{
