@@ -29,3 +29,15 @@ Thumbs.db
 
 # Backups
 *.bak
+
+# Proprietary business documents — NEVER commit
+STRATEGY-100X.md
+BUSINESS-PLAN.md
+AD-SCHEDULE.md
+TAX-NOTES.md
+NAPKIN.md
+OPS.md
+MEDIA-KIT.md
+*.PNG
+*.png
+Format*
