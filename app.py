@@ -780,6 +780,11 @@ def index():
     d['ad_bottom']            = _get_ad('bottom')
     d['ad_sidebar']           = _get_ad('sidebar')
     d['ad_feed']              = _get_ad('feed')
+    d['ad_top_list']          = _get_ads_for_slot('top')
+    d['ad_mid_list']          = _get_ads_for_slot('mid')
+    d['ad_bottom_list']       = _get_ads_for_slot('bottom')
+    d['ad_sidebar_list']      = _get_ads_for_slot('sidebar')
+    d['ad_feed_list']         = _get_ads_for_slot('feed')
     # Geo-feed
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     cc = session.get('geo_country')
@@ -919,19 +924,24 @@ _SELF_PROMOS = {
 
 
 def _get_ad(slot='mid'):
+    ads = _get_ads_for_slot(slot)
+    return ads[0] if ads else _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
+
+
+def _get_ads_for_slot(slot):
     if not _DB_URL:
-        return _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
+        return [_SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])]
     try:
         with _db_conn() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
-                    "SELECT * FROM ads WHERE slot=%s AND active=TRUE ORDER BY created_at DESC LIMIT 1",
+                    "SELECT * FROM ads WHERE slot=%s AND active=TRUE ORDER BY created_at ASC",
                     (slot,)
                 )
-                row = cur.fetchone()
-        return dict(row) if row else _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
+                rows = cur.fetchall()
+        return [dict(r) for r in rows] if rows else [_SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])]
     except Exception:
-        return _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
+        return [_SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])]
 
 
 # ── Geo-feed ──────────────────────────────────────────────────────────────────
@@ -1291,7 +1301,11 @@ def api_ad_save():
     try:
         with _db_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute('UPDATE ads SET active=FALSE WHERE slot=%s', (slot,))
+                # Count active ads in slot — cap at 5 per slot
+                cur.execute("SELECT COUNT(*) FROM ads WHERE slot=%s AND active=TRUE", (slot,))
+                count = cur.fetchone()[0]
+                if count >= 5:
+                    return jsonify({'error': 'Slot full — 5 advertisers maximum. Remove one first.'}), 400
                 cur.execute("""
                     INSERT INTO ads (slot, advertiser, url, headline, strapline, cta, bg_color, accent, image_url, active)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE)
@@ -1311,6 +1325,21 @@ def api_ad_save():
         log.error(f'Ad save failed: {exc}')
         return jsonify({'error': 'Database error'}), 500
     return jsonify({'status': 'saved'})
+
+
+@app.route('/api/ad/<int:ad_id>', methods=['DELETE'])
+def api_ad_delete(ad_id):
+    if not _admin_check():
+        return _auth_error()
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('UPDATE ads SET active=FALSE WHERE id=%s', (ad_id,))
+            conn.commit()
+    except Exception as exc:
+        log.error(f'Ad delete: {exc}')
+        return jsonify({'error': 'Database error'}), 500
+    return jsonify({'status': 'removed'})
 
 
 @app.route('/api/ad/clear', methods=['POST'])

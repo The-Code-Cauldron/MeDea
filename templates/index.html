@@ -709,6 +709,10 @@
     font-weight:600;color:var(--ink-3);padding:0;transition:color .15s;
   }
   .ad-swap-btn:hover{color:var(--ink)}
+  .ad-rotation-list{padding:4px 24px 8px;display:flex;flex-direction:column;gap:2px}
+  .ad-rot-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--rule)}
+  .ad-rot-name{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+  .ad-banner{transition:opacity .35s ease}
   .ad-form{padding:16px 24px;border-top:1px dashed var(--rule)}
   .ad-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .ad-input{
@@ -999,33 +1003,44 @@
   </div>
   {% else %}
 
-  {% macro ad_slot(ad, slot) %}
-  <div class="ad-strip">
-    <div class="ad-label">{% if ad.self_promo %}From the editor{% else %}Advertisement{% endif %}</div>
-    <a class="ad-banner ad-dynamic"
+  {% macro ad_slot(ad, slot, ad_list=[]) %}
+  <div class="ad-strip" id="adwrap-{{ slot }}">
+    <div class="ad-label ad-label-{{ slot }}">{% if ad.self_promo %}From the editor{% else %}Advertisement{% endif %}</div>
+    <a class="ad-banner ad-dynamic" id="adbanner-{{ slot }}"
        href="{{ ad.url }}" target="_blank" rel="noopener sponsored"
-       style="background:{{ ad.bg_color }};border-left:4px solid {{ ad.accent }}">
+       style="background:{{ ad.bg_color }};border-left:4px solid {{ ad.accent }}"
+       data-ads="{{ ad_list | tojson | e }}">
       <div class="ad-brand" style="color:{{ ad.accent }}">{{ ad.headline }}</div>
       <div class="ad-strapline">{{ ad.strapline }}</div>
       <div class="ad-cta" style="color:{{ ad.bg_color }};background:{{ ad.accent }}">{{ ad.cta }}</div>
     </a>
     {% if admin %}
     <div class="ad-admin-bar">
-      <span class="ad-slot-tag">{{ slot }} slot</span>
-      <button class="ad-swap-btn" onclick="showAdForm('{{ slot }}')" type="button">Swap ad</button>
-      {% if not ad.self_promo %}<button class="ad-swap-btn" onclick="clearAd('{{ slot }}')" type="button" style="color:var(--neg)">Clear</button>{% endif %}
+      <span class="ad-slot-tag">{{ slot }} · {{ ad_list|length }}/5</span>
+      <button class="ad-swap-btn" onclick="showAdForm('{{ slot }}')" type="button">+ Add advertiser</button>
+      <button class="ad-swap-btn" onclick="clearAd('{{ slot }}')" type="button" style="color:var(--neg)">Clear all</button>
     </div>
+    {% if ad_list and not (ad_list|length == 1 and ad_list[0].self_promo) %}
+    <div class="ad-rotation-list">
+      {% for a in ad_list %}{% if not a.self_promo %}
+      <div class="ad-rot-row">
+        <span class="ad-rot-name">{{ a.advertiser or a.headline }}</span>
+        {% if a.id %}<button class="ad-swap-btn" onclick="deleteAd({{ a.id }},'{{ slot }}')" style="color:var(--neg)">✕</button>{% endif %}
+      </div>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
     <div class="ad-form" id="ad-form-{{ slot }}" style="display:none">
       <div class="ad-form-grid">
         <input class="ad-input" id="af-{{ slot }}-advertiser" placeholder="Advertiser name" type="text"/>
         <input class="ad-input" id="af-{{ slot }}-url"        placeholder="URL (required)"  type="url"/>
         <input class="ad-input" id="af-{{ slot }}-headline"   placeholder="Headline"         type="text"/>
         <input class="ad-input" id="af-{{ slot }}-strapline"  placeholder="Strapline"        type="text"/>
-        <input class="ad-input" id="af-{{ slot }}-cta"        placeholder="CTA button text"  type="text"/>
+        <input class="ad-input" id="af-{{ slot }}-cta"        placeholder="CTA text"         type="text"/>
         <input class="ad-input" id="af-{{ slot }}-bg"         placeholder="Background hex"   type="text"/>
         <input class="ad-input" id="af-{{ slot }}-accent"     placeholder="Accent hex"       type="text"/>
       </div>
-      <button class="dispatch-btn" onclick="saveAd('{{ slot }}')" type="button" style="margin-top:10px">Go live</button>
+      <button class="dispatch-btn" onclick="saveAd('{{ slot }}')" type="button" style="margin-top:10px">Add to rotation</button>
     </div>
     {% endif %}
   </div>
@@ -1108,7 +1123,7 @@
     </div>
   </section>
 
-  {{ ad_slot(ad_top, 'top') }}
+  {{ ad_slot(ad_top, 'top', ad_top_list) }}
 
   <!-- ───── Topic filter chips ───── -->
   {% set all_stories = pro + con + flagged %}
@@ -1473,7 +1488,7 @@
       </div>
 
       <!-- Feed ad slot — fills gap below Held stories -->
-      {{ ad_slot(ad_feed, 'feed') }}
+      {{ ad_slot(ad_feed, 'feed', ad_feed_list) }}
     </div>
   </div>
 
@@ -1498,7 +1513,7 @@
   </section>
   {% endif %}
 
-  {{ ad_slot(ad_mid, 'mid') }}
+  {{ ad_slot(ad_mid, 'mid', ad_mid_list) }}
 
   <!-- ───── Sources ───── -->
   <section class="sources">
@@ -1538,7 +1553,7 @@
     </div>
   </section>
 
-  {{ ad_slot(ad_bottom, 'bottom') }}
+  {{ ad_slot(ad_bottom, 'bottom', ad_bottom_list) }}
 
   <!-- ───── Visitor counter ───── -->
   <div class="visitor-counter">
@@ -1897,6 +1912,44 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js', {scope: '/'})
       .catch(() => {});
+  }
+
+  /* ───── Ad rotation ───── */
+  (function initRotation(){
+    const INTERVAL = 45000; // 45 seconds
+    document.querySelectorAll('.ad-banner[data-ads]').forEach(function(banner){
+      try {
+        const ads = JSON.parse(banner.getAttribute('data-ads'));
+        if (!ads || ads.length < 2) return;
+        let idx = 0;
+        setInterval(function(){
+          idx = (idx + 1) % ads.length;
+          const a = ads[idx];
+          banner.style.opacity = '0';
+          setTimeout(function(){
+            banner.href               = a.url || '#';
+            banner.style.background   = a.bg_color || '#1c1a16';
+            banner.style.borderLeftColor = a.accent || '#c9a84c';
+            const brand = banner.querySelector('.ad-brand');
+            const strap = banner.querySelector('.ad-strapline');
+            const cta   = banner.querySelector('.ad-cta');
+            if (brand){ brand.textContent = a.headline || ''; brand.style.color = a.accent || '#c9a84c'; }
+            if (strap){ strap.textContent = a.strapline || ''; }
+            if (cta)  { cta.textContent   = a.cta || 'Visit'; cta.style.background = a.accent || '#c9a84c'; cta.style.color = a.bg_color || '#1c1a16'; }
+            banner.style.opacity = '1';
+          }, 350);
+        }, INTERVAL);
+      } catch(e){}
+    });
+  })();
+
+  function deleteAd(id, slot){
+    if (!confirm('Remove this advertiser from the rotation?')) return;
+    fetch('/api/ad/' + id, {method:'DELETE'})
+    .then(r=>r.json()).then(d=>{
+      if(d.error){ if(!handleAuthError(d)) alert(d.error); return; }
+      location.reload();
+    });
   }
 
   /* ───── Ad management ───── */
