@@ -250,7 +250,11 @@
   .stories{
     margin-top:40px;
     display:grid;grid-template-columns: 1.4fr 1fr;
-    gap:48px;align-items:start;
+    gap:48px;align-items:stretch;
+  }
+  /* Aside fills its grid cell height */
+  .stories > aside{
+    display:flex;flex-direction:column;
   }
   .section-head{
     display:flex;align-items:baseline;justify-content:space-between;gap:14px;
@@ -447,36 +451,57 @@
   .src-counts .f{color:var(--flag)}
   .src-counts .err{color:var(--neg);font-family:var(--sans);font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
 
-  /* ───── Sidebar ad slot ───── */
-  .ad-sidebar-wrap{margin-top:20px}
+  /* ───── Premium sidebar ad ───── */
+  .ad-sidebar-wrap{
+    flex:1;display:flex;flex-direction:column;margin-top:20px;min-height:320px;
+  }
+  .ad-sidebar-sticky{
+    position:sticky;top:24px;
+  }
   .ad-sidebar-banner{
-    display:flex;flex-direction:column;text-decoration:none;
-    border:1px solid var(--rule);overflow:hidden;
-    transition:opacity .15s;
+    display:flex;flex-direction:column;text-decoration:none;overflow:hidden;
+    border:1px solid var(--rule);transition:opacity .2s;
   }
-  .ad-sidebar-banner:hover{opacity:.88}
+  .ad-sidebar-banner:hover{opacity:.9}
   .ad-sidebar-img{
-    width:100%;height:160px;object-fit:cover;display:block;
+    width:100%;min-height:260px;max-height:420px;object-fit:cover;display:block;
   }
-  .ad-sidebar-body{
-    padding:14px 16px 16px;
+  /* No image — use a bold colour fill */
+  .ad-sidebar-no-img{
+    min-height:200px;display:flex;align-items:center;justify-content:center;
   }
+  .ad-sidebar-no-img .ad-sidebar-brand{font-size:32px;letter-spacing:.14em}
+  .ad-sidebar-body{padding:18px 18px 20px}
   .ad-sidebar-brand{
-    font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:.18em;
-    text-transform:uppercase;margin-bottom:6px;
+    font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:.2em;
+    text-transform:uppercase;margin-bottom:8px;
   }
   .ad-sidebar-strapline{
-    font-family:var(--serif);font-size:13.5px;font-style:italic;font-weight:300;
-    line-height:1.4;color:rgba(255,255,255,.75);margin-bottom:12px;
+    font-family:var(--serif);font-size:14px;font-style:italic;font-weight:300;
+    line-height:1.45;color:rgba(255,255,255,.75);margin-bottom:16px;
   }
   .ad-sidebar-cta{
-    display:inline-block;font-family:var(--sans);font-size:10px;letter-spacing:.2em;
-    text-transform:uppercase;font-weight:700;padding:8px 14px;
+    display:inline-block;font-family:var(--sans);font-size:10px;letter-spacing:.22em;
+    text-transform:uppercase;font-weight:700;padding:10px 18px;
   }
   .ad-sidebar-label{
     font-family:var(--sans);font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;
-    color:var(--ink-4);font-weight:600;margin-bottom:6px;
+    color:var(--ink-4);font-weight:600;margin-bottom:8px;
   }
+  .ad-reserved{
+    flex:1;border:1px dashed var(--rule);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:12px;padding:32px 20px;
+    text-align:center;min-height:280px;
+  }
+  .ad-reserved .ar-head{
+    font-family:var(--serif);font-size:18px;font-weight:500;font-style:italic;
+    color:var(--ink-3);
+  }
+  .ad-reserved .ar-sub{
+    font-family:var(--sans);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-4);line-height:1.8;
+  }
+  .ad-reserved a{color:var(--pos-deep);border-bottom:1px solid var(--pos-soft)}
 
   /* ───── Archive link ───── */
   .pill.paywall{
@@ -1310,41 +1335,62 @@
       </section>
       {% endif %}
 
-      <!-- Sidebar ad slot — fills the dead space below OS -->
+      <!-- Premium sidebar ad — fills all remaining column height -->
       <div class="ad-sidebar-wrap">
-        <div class="ad-sidebar-label">{% if ad_sidebar.self_promo %}From the editor{% else %}Advertisement{% endif %}</div>
-        <a class="ad-sidebar-banner"
-           href="{{ ad_sidebar.url }}" target="_blank" rel="noopener sponsored"
-           style="background:{{ ad_sidebar.bg_color }};border-top:3px solid {{ ad_sidebar.accent }}">
-          {% if ad_sidebar.image_url %}
-          <img class="ad-sidebar-img" src="{{ ad_sidebar.image_url }}" alt="{{ ad_sidebar.headline }}" loading="lazy"/>
+        <div class="ad-sidebar-sticky">
+          <div class="ad-sidebar-label">
+            {% if ad_sidebar.self_promo %}Premium placement available{% else %}Advertisement{% endif %}
+          </div>
+          {% if ad_sidebar.self_promo %}
+          <div class="ad-reserved">
+            <div class="ar-head">Premium Sidebar</div>
+            <div class="ar-sub">
+              One slot · Big brands only<br>
+              Image-led · Sticky on scroll<br>
+              Seen by every reader<br>
+              every session
+            </div>
+            <a href="mailto:axion-project@proton.me?subject=MeDea Premium Sidebar Ad" style="font-family:var(--sans);font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--pos-deep)">Enquire →</a>
+          </div>
+          {% else %}
+          <a class="ad-sidebar-banner"
+             href="{{ ad_sidebar.url }}" target="_blank" rel="noopener sponsored"
+             style="border-top:4px solid {{ ad_sidebar.accent }}">
+            {% if ad_sidebar.image_url %}
+            <img class="ad-sidebar-img" src="{{ ad_sidebar.image_url }}" alt="{{ ad_sidebar.headline }}" loading="lazy"/>
+            {% else %}
+            <div class="ad-sidebar-no-img" style="background:{{ ad_sidebar.bg_color }}">
+              <div class="ad-sidebar-brand" style="color:{{ ad_sidebar.accent }}">{{ ad_sidebar.headline }}</div>
+            </div>
+            {% endif %}
+            <div class="ad-sidebar-body" style="background:{{ ad_sidebar.bg_color }}">
+              <div class="ad-sidebar-brand" style="color:{{ ad_sidebar.accent }}">{{ ad_sidebar.headline }}</div>
+              <div class="ad-sidebar-strapline">{{ ad_sidebar.strapline }}</div>
+              <div class="ad-sidebar-cta" style="color:{{ ad_sidebar.bg_color }};background:{{ ad_sidebar.accent }}">{{ ad_sidebar.cta }}</div>
+            </div>
+          </a>
           {% endif %}
-          <div class="ad-sidebar-body" style="background:{{ ad_sidebar.bg_color }}">
-            <div class="ad-sidebar-brand" style="color:{{ ad_sidebar.accent }}">{{ ad_sidebar.headline }}</div>
-            <div class="ad-sidebar-strapline">{{ ad_sidebar.strapline }}</div>
-            <div class="ad-sidebar-cta" style="color:{{ ad_sidebar.bg_color }};background:{{ ad_sidebar.accent }}">{{ ad_sidebar.cta }}</div>
+          {% if admin %}
+          <div class="ad-admin-bar">
+            <span class="ad-slot-tag">premium sidebar</span>
+            <button class="ad-swap-btn" onclick="showAdForm('sidebar')" type="button">Add advertiser</button>
+            {% if not ad_sidebar.self_promo %}<button class="ad-swap-btn" onclick="clearAd('sidebar')" type="button" style="color:var(--neg)">Clear</button>{% endif %}
           </div>
-        </a>
-        {% if admin %}
-        <div class="ad-admin-bar">
-          <span class="ad-slot-tag">sidebar slot</span>
-          <button class="ad-swap-btn" onclick="showAdForm('sidebar')" type="button">Swap ad</button>
-          {% if not ad_sidebar.self_promo %}<button class="ad-swap-btn" onclick="clearAd('sidebar')" type="button" style="color:var(--neg)">Clear</button>{% endif %}
-        </div>
-        <div class="ad-form" id="ad-form-sidebar" style="display:none">
-          <div class="ad-form-grid">
-            <input class="ad-input" id="af-sidebar-advertiser" placeholder="Advertiser name" type="text"/>
-            <input class="ad-input" id="af-sidebar-url"        placeholder="URL (required)"  type="url"/>
-            <input class="ad-input" id="af-sidebar-headline"   placeholder="Headline"         type="text"/>
-            <input class="ad-input" id="af-sidebar-strapline"  placeholder="Strapline"        type="text"/>
-            <input class="ad-input" id="af-sidebar-cta"        placeholder="CTA text"         type="text"/>
-            <input class="ad-input" id="af-sidebar-bg"         placeholder="Background hex"   type="text"/>
-            <input class="ad-input" id="af-sidebar-accent"     placeholder="Accent hex"       type="text"/>
-            <input class="ad-input" id="af-sidebar-image_url"  placeholder="Image URL (optional — makes it pop)" type="url" style="grid-column:1/-1"/>
+          <div class="ad-form" id="ad-form-sidebar" style="display:none">
+            <div class="ad-form-grid">
+              <input class="ad-input" id="af-sidebar-advertiser" placeholder="Brand name" type="text"/>
+              <input class="ad-input" id="af-sidebar-url"        placeholder="URL"  type="url"/>
+              <input class="ad-input" id="af-sidebar-headline"   placeholder="Brand headline" type="text"/>
+              <input class="ad-input" id="af-sidebar-strapline"  placeholder="Strapline" type="text"/>
+              <input class="ad-input" id="af-sidebar-cta"        placeholder="CTA text" type="text"/>
+              <input class="ad-input" id="af-sidebar-bg"         placeholder="Background hex" type="text"/>
+              <input class="ad-input" id="af-sidebar-accent"     placeholder="Accent hex" type="text"/>
+              <input class="ad-input" id="af-sidebar-image_url"  placeholder="Image URL — product shot, lifestyle, campaign" type="url" style="grid-column:1/-1"/>
+            </div>
+            <button class="dispatch-btn" onclick="saveAd('sidebar')" type="button" style="margin-top:10px">Go live</button>
           </div>
-          <button class="dispatch-btn" onclick="saveAd('sidebar')" type="button" style="margin-top:10px">Go live</button>
+          {% endif %}
         </div>
-        {% endif %}
       </div>
 
     </aside>
