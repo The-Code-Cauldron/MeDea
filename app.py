@@ -632,7 +632,9 @@ def index():
     d['opinion']              = _get_opinion()
     d['traffic']              = _get_traffic() if d['admin'] else None
     d['total_visitors']       = _get_total_visitors() if _DB_URL else 0
-    d['ad']                   = _get_ad()
+    d['ad_top']               = _get_ad('top')
+    d['ad_mid']               = _get_ad('mid')
+    d['ad_bottom']            = _get_ad('bottom')
     _log_pageview()
     return render_template('index.html', **d)
 
@@ -706,31 +708,54 @@ def _log_pageview():
         pass
 
 
-_SELF_PROMO = {
-    'advertiser': 'QuantumProtect',
-    'url':        'https://quantumprotection-production.up.railway.app',
-    'headline':   'QuantumProtect',
-    'strapline':  'Post-quantum cryptography. Protect your data against the threats that are already coming.',
-    'cta':        'Explore free →',
-    'bg_color':   '#0f1a2e',
-    'accent':     '#2a5f43',
-    'self_promo': True,
+_SELF_PROMOS = {
+    'top': {
+        'advertiser': 'QuantumProtect',
+        'url':        'https://quantumprotection-production.up.railway.app',
+        'headline':   'QuantumProtect',
+        'strapline':  'Post-quantum cryptography. Protect your data against the threats already coming.',
+        'cta':        'Explore free →',
+        'bg_color':   '#0f1a2e',
+        'accent':     '#2a5f43',
+        'self_promo': True,
+    },
+    'mid': {
+        'advertiser': 'The Architect',
+        'url':        'https://the-architect-neo.github.io/',
+        'headline':   'The Architect',
+        'strapline':  'Operational intelligence. Fraud. Financial inclusion. Protection. Built from the inside out.',
+        'cta':        'View the work →',
+        'bg_color':   '#1c1a16',
+        'accent':     '#c9a84c',
+        'self_promo': True,
+    },
+    'bottom': {
+        'advertiser': 'GitHub Sponsors',
+        'url':        'https://github.com/sponsors/The-Architect-Neo',
+        'headline':   'Support MeDea',
+        'strapline':  'Independent journalism costs time. Sponsor the editor and keep the signal running.',
+        'cta':        'Sponsor →',
+        'bg_color':   '#161b22',
+        'accent':     '#238636',
+        'self_promo': True,
+    },
 }
 
 
-def _get_ad():
+def _get_ad(slot='mid'):
     if not _DB_URL:
-        return _SELF_PROMO
+        return _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
     try:
         with _db_conn() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
-                    "SELECT * FROM ads WHERE active=TRUE ORDER BY created_at DESC LIMIT 1"
+                    "SELECT * FROM ads WHERE slot=%s AND active=TRUE ORDER BY created_at DESC LIMIT 1",
+                    (slot,)
                 )
                 row = cur.fetchone()
-        return dict(row) if row else _SELF_PROMO
+        return dict(row) if row else _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
     except Exception:
-        return _SELF_PROMO
+        return _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
 
 
 def _get_total_visitors():
@@ -972,17 +997,19 @@ def api_ad_save():
     data = request.get_json(silent=True) or {}
     if not _admin_check(data):
         return _auth_error()
-    url = data.get('url', '').strip()
+    url  = data.get('url', '').strip()
+    slot = data.get('slot', 'mid').strip()
     if not url:
         return jsonify({'error': 'URL required'}), 400
     try:
         with _db_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute('UPDATE ads SET active=FALSE')
+                cur.execute('UPDATE ads SET active=FALSE WHERE slot=%s', (slot,))
                 cur.execute("""
-                    INSERT INTO ads (advertiser, url, headline, strapline, cta, bg_color, accent, active)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,TRUE)
+                    INSERT INTO ads (slot, advertiser, url, headline, strapline, cta, bg_color, accent, active)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,TRUE)
                 """, (
+                    slot,
                     data.get('advertiser',''),
                     url,
                     data.get('headline',''),
@@ -1003,10 +1030,11 @@ def api_ad_clear():
     data = request.get_json(silent=True) or {}
     if not _admin_check(data):
         return _auth_error()
+    slot = (request.get_json(silent=True) or {}).get('slot', 'mid')
     try:
         with _db_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute('UPDATE ads SET active=FALSE')
+                cur.execute('UPDATE ads SET active=FALSE WHERE slot=%s', (slot,))
             conn.commit()
     except Exception as exc:
         log.error(f'Ad clear failed: {exc}')

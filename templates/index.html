@@ -554,8 +554,13 @@
     font-family:var(--sans);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
     font-weight:700;padding:9px 16px;white-space:nowrap;flex-shrink:0;
   }
+  .ad-slot-tag{
+    font-family:var(--sans);font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:700;color:var(--ink-4);padding:2px 7px;border:1px solid var(--rule);
+    border-radius:2px;
+  }
   .ad-admin-bar{
-    display:flex;gap:12px;padding:8px 24px;border-top:1px dashed var(--rule);
+    display:flex;align-items:center;gap:12px;padding:8px 24px;border-top:1px dashed var(--rule);
   }
   .ad-swap-btn{
     appearance:none;background:transparent;border:none;cursor:pointer;
@@ -851,6 +856,38 @@
   </div>
   {% else %}
 
+  {% macro ad_slot(ad, slot) %}
+  <div class="ad-strip">
+    <div class="ad-label">{% if ad.self_promo %}From the editor{% else %}Advertisement{% endif %}</div>
+    <a class="ad-banner ad-dynamic"
+       href="{{ ad.url }}" target="_blank" rel="noopener sponsored"
+       style="background:{{ ad.bg_color }};border-left-color:{{ ad.accent }}">
+      <div class="ad-brand" style="color:{{ ad.accent }}">{{ ad.headline }}</div>
+      <div class="ad-strapline">{{ ad.strapline }}</div>
+      <div class="ad-cta" style="color:{{ ad.bg_color }};background:{{ ad.accent }}">{{ ad.cta }}</div>
+    </a>
+    {% if admin %}
+    <div class="ad-admin-bar">
+      <span class="ad-slot-tag">{{ slot }} slot</span>
+      <button class="ad-swap-btn" onclick="showAdForm('{{ slot }}')" type="button">Swap ad</button>
+      {% if not ad.self_promo %}<button class="ad-swap-btn" onclick="clearAd('{{ slot }}')" type="button" style="color:var(--neg)">Clear</button>{% endif %}
+    </div>
+    <div class="ad-form" id="ad-form-{{ slot }}" style="display:none">
+      <div class="ad-form-grid">
+        <input class="ad-input" id="af-{{ slot }}-advertiser" placeholder="Advertiser name" type="text"/>
+        <input class="ad-input" id="af-{{ slot }}-url"        placeholder="URL (required)"  type="url"/>
+        <input class="ad-input" id="af-{{ slot }}-headline"   placeholder="Headline"         type="text"/>
+        <input class="ad-input" id="af-{{ slot }}-strapline"  placeholder="Strapline"        type="text"/>
+        <input class="ad-input" id="af-{{ slot }}-cta"        placeholder="CTA button text"  type="text"/>
+        <input class="ad-input" id="af-{{ slot }}-bg"         placeholder="Background hex"   type="text"/>
+        <input class="ad-input" id="af-{{ slot }}-accent"     placeholder="Accent hex"       type="text"/>
+      </div>
+      <button class="dispatch-btn" onclick="saveAd('{{ slot }}')" type="button" style="margin-top:10px">Go live</button>
+    </div>
+    {% endif %}
+  </div>
+  {% endmacro %}
+
   <!-- ───── Masthead ───── -->
   <header class="masthead">
     <div class="brand">
@@ -927,6 +964,8 @@
       <div class="label">Signal score · out of 100</div>
     </div>
   </section>
+
+  {{ ad_slot(ad_top, 'top') }}
 
   <!-- ───── Stories ───── -->
   <section class="stories">
@@ -1194,42 +1233,7 @@
   </section>
   {% endif %}
 
-  <!-- ───── Ad slot ───── -->
-  <div class="ad-strip">
-    {% if ad.self_promo is not defined or not ad.self_promo %}
-    <div class="ad-label">Advertisement</div>
-    {% else %}
-    <div class="ad-label">From the editor</div>
-    {% endif %}
-    <a class="ad-banner ad-dynamic"
-       href="{{ ad.url }}"
-       target="_blank" rel="noopener sponsored"
-       style="background:{{ ad.bg_color }};border-left-color:{{ ad.accent }}">
-      <div class="ad-brand" style="color:{{ ad.accent }}">{{ ad.headline }}</div>
-      <div class="ad-strapline">{{ ad.strapline }}</div>
-      <div class="ad-cta" style="color:{{ ad.bg_color }};background:{{ ad.accent }}">{{ ad.cta }}</div>
-    </a>
-    {% if admin %}
-    <div class="ad-admin-bar">
-      <button class="ad-swap-btn" onclick="showAdForm()" type="button">Swap ad</button>
-      {% if ad.self_promo is not defined or not ad.self_promo %}
-      <button class="ad-swap-btn" onclick="clearAd()" type="button" style="color:var(--neg)">Clear to self-promo</button>
-      {% endif %}
-    </div>
-    <div class="ad-form" id="ad-form" style="display:none">
-      <div class="ad-form-grid">
-        <input class="ad-input" id="af-advertiser" placeholder="Advertiser name" type="text"/>
-        <input class="ad-input" id="af-url"        placeholder="URL (required)" type="url"/>
-        <input class="ad-input" id="af-headline"   placeholder="Headline" type="text"/>
-        <input class="ad-input" id="af-strapline"  placeholder="Strapline" type="text"/>
-        <input class="ad-input" id="af-cta"        placeholder="CTA button text" type="text"/>
-        <input class="ad-input" id="af-bg"         placeholder="Background colour e.g. #0f0f0f" type="text"/>
-        <input class="ad-input" id="af-accent"     placeholder="Accent colour e.g. #c9a84c" type="text"/>
-      </div>
-      <button class="dispatch-btn" onclick="saveAd()" type="button" style="margin-top:10px">Go live</button>
-    </div>
-    {% endif %}
-  </div>
+  {{ ad_slot(ad_mid, 'mid') }}
 
   <!-- ───── Sources ───── -->
   <section class="sources">
@@ -1268,6 +1272,8 @@
       {% endfor %}
     </div>
   </section>
+
+  {{ ad_slot(ad_bottom, 'bottom') }}
 
   <!-- ───── Visitor counter ───── -->
   <div class="visitor-counter">
@@ -1607,21 +1613,22 @@
   }
 
   /* ───── Ad management ───── */
-  function showAdForm(){
-    const f = document.getElementById('ad-form');
+  function showAdForm(slot){
+    const f = document.getElementById('ad-form-' + slot);
     if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
   }
 
-  function saveAd(){
-    const get = id => (document.getElementById(id)||{}).value||'';
+  function saveAd(slot){
+    const g = s => (document.getElementById('af-' + slot + '-' + s)||{}).value||'';
     const data = {
-      advertiser: get('af-advertiser'),
-      url:        get('af-url'),
-      headline:   get('af-headline'),
-      strapline:  get('af-strapline'),
-      cta:        get('af-cta') || 'Visit',
-      bg_color:   get('af-bg')  || '#0f0f0f',
-      accent:     get('af-accent') || '#c9a84c',
+      slot,
+      advertiser: g('advertiser'),
+      url:        g('url'),
+      headline:   g('headline'),
+      strapline:  g('strapline'),
+      cta:        g('cta')    || 'Visit',
+      bg_color:   g('bg')     || '#0f0f0f',
+      accent:     g('accent') || '#c9a84c',
     };
     if (!data.url){ alert('URL is required'); return; }
     fetch('/api/ad',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -1632,10 +1639,10 @@
     });
   }
 
-  function clearAd(){
-    if (!confirm('Revert to self-promo?')) return;
+  function clearAd(slot){
+    if (!confirm('Revert ' + slot + ' slot to self-promo?')) return;
     fetch('/api/ad/clear',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({})})
+      body:JSON.stringify({slot})})
     .then(r=>r.json()).then(d=>{
       if(d.error){ if(!handleAuthError(d)) alert(d.error); return; }
       location.reload();
