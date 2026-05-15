@@ -16,7 +16,7 @@ import feedparser
 import psycopg2
 import psycopg2.extras
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 log = logging.getLogger('medea')
@@ -24,6 +24,9 @@ log = logging.getLogger('medea')
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY') or os.urandom(32)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # (name, rss_url, bias_label, website)
 FEEDS = [
@@ -591,9 +594,8 @@ def index():
     d['description']   = _filter_description(d['score'], d['pro_count'], d['con_count'])
     d['dispatches']           = _db_fetch() if _DB_URL else []
     d['dispatch_live']        = bool(_DB_URL)
-    admin_token               = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
-    d['admin']                = bool(admin_token and request.args.get('edit') == admin_token)
-    d['admin_token']          = admin_token if d['admin'] else ''
+    d['admin']                = bool(session.get('admin'))
+    d['admin_token']          = ''
     d['sponsors']             = _get_sponsors(limit=12) if _DB_URL else []
     d['unfulfilled_sponsors'] = _get_sponsors(limit=50, unfulfilled_only=True) if (_DB_URL and d['admin']) else []
     d['opinion']              = _get_opinion()
@@ -623,9 +625,28 @@ def _get_opinion():
     return None
 
 
-def _admin_check(data):
-    admin = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
-    return bool(admin and (data or {}).get('token') == admin)
+_login_attempts  = {}
+_login_lock      = threading.Lock()
+
+
+def _login_rate_ok(ip):
+    now = time.time()
+    with _login_lock:
+        times = [t for t in _login_attempts.get(ip, []) if now - t < 900]
+        if len(times) >= 5:
+            return False
+        times.append(now)
+        _login_attempts[ip] = times
+        return True
+
+
+def _admin_check(data=None):
+    if session.get('admin'):
+        return True
+    if data:
+        admin = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
+        return bool(admin and data.get('token') == admin)
+    return False
 
 
 @app.route('/api/submit', methods=['POST'])
@@ -688,9 +709,7 @@ def api_submit():
 
 @app.route('/api/dispatch/<int:item_id>', methods=['DELETE'])
 def api_dispatch_delete(item_id):
-    token = request.headers.get('X-Admin-Token', '')
-    admin = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
-    if not admin or token != admin:
+    if not _admin_check():
         return jsonify({'error': 'Not authorised'}), 403
     try:
         with _db_conn() as conn:
@@ -742,6 +761,36 @@ def api_progress():
 def api_refresh():
     threading.Thread(target=_fetch, daemon=True).start()
     return jsonify({'status': 'fetching'})
+
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if session.get('admin'):
+        return redirect(url_for('index'))
+    error = False
+    if request.method == 'POST':
+        ip    = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+        token = request.form.get('token', '').strip()
+        admin = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
+        if not _login_rate_ok(ip):
+            error = True
+        elif admin and token == admin:
+            session['admin']    = True
+            session.permanent   = True
+            app.permanent_session_lifetime = __import__('datetime').timedelta(days=30)
+            return redirect(url_for('index'))
+        else:
+            error = True
+            log.warning(f'Failed login attempt from {ip}')
+    return render_template('login.html', error=error)
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
 
 
 # ── OpinionSays ───────────────────────────────────────────────────────────────

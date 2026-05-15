@@ -762,6 +762,11 @@
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.5-9.5-9.2C1 8 3.5 4 7.5 4c2 0 3.5 1 4.5 2.5C13 5 14.5 4 16.5 4 20.5 4 23 8 21.5 11.8 19.5 16.5 12 21 12 21z"/></svg>
         Sponsor
       </a>
+      {% if admin %}
+      <form method="POST" action="/logout" style="display:inline">
+        <button class="btn" type="submit">Sign out</button>
+      </form>
+      {% endif %}
       <button class="btn" id="refresh-btn" onclick="triggerRefresh()" type="button">Refresh</button>
       <button class="btn icon" id="theme-btn" onclick="toggleTheme()" type="button" title="Toggle theme" aria-label="Toggle light/dark mode">
         <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1239,7 +1244,6 @@
 
   /* ───── The Dispatch ───── */
   const DISPATCH_ADMIN = {{ admin|tojson }};
-  const DISPATCH_TOKEN = {{ admin_token|tojson }};
 
   function escHtml(s){
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1326,7 +1330,7 @@
     const custom_title = hed ? (hed.value||'').trim() : '';
     btn.disabled = true; btn.textContent = 'Filing…';
     fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url, token:DISPATCH_TOKEN, custom_title})})
+      body:JSON.stringify({url, custom_title})})
     .then(r=>r.json())
     .then(data=>{
       btn.disabled=false; btn.textContent='File it';
@@ -1346,7 +1350,7 @@
   }
 
   function deleteDispatch(id){
-    fetch('/api/dispatch/'+id,{method:'DELETE',headers:{'X-Admin-Token':DISPATCH_TOKEN}})
+    fetch('/api/dispatch/'+id,{method:'DELETE'})
     .then(r=>r.json()).then(data=>{
       if (data.error) return;
       fetch('/api/dispatch').then(r=>r.json()).then(rows=>{
@@ -1362,7 +1366,7 @@
     fetch('/api/sponsors/' + id + '/fulfill', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({token:DISPATCH_TOKEN})
+      body:JSON.stringify({})
     }).then(r=>r.json()).then(data=>{
       if (data.error){ if(btn){btn.textContent='Mark done';btn.classList.remove('done');} return; }
       const row = document.getElementById('sl-' + id);
@@ -1386,7 +1390,7 @@
     if (!body) return;
     btn.disabled=true; btn.textContent='Saving…';
     fetch('/api/opinion',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({body, token:DISPATCH_TOKEN})})
+      body:JSON.stringify({body})})
     .then(r=>r.json()).then(data=>{
       btn.disabled=false; btn.textContent='Publish';
       if (data.error){ alert(data.error); return; }
@@ -1403,7 +1407,7 @@
   function clearOpinion(){
     if (!confirm('Clear OpinionSays?')) return;
     fetch('/api/opinion/clear',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({token:DISPATCH_TOKEN})})
+      body:JSON.stringify({})})
     .then(r=>r.json()).then(data=>{
       if (data.error){ alert(data.error); return; }
       const el = document.getElementById('os-body');
@@ -1416,7 +1420,7 @@
   function adminClear(){
     if (!confirm('Clear all dispatches?')) return;
     fetch('/api/submit/clear',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({token:DISPATCH_TOKEN})})
+      body:JSON.stringify({})})
     .then(r=>r.json()).then(data=>{
       if (data.error){ alert(data.error); return; }
       renderFeed([],false); updateMeta(0); _lastDispatchId=null;

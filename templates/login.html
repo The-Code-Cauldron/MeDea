@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeDea — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --paper:#f6f1e6;--card:#fbf8f0;--ink:#1c1a16;--ink-2:#4a463e;--ink-3:#807a6c;
+    --ink-4:#b3ad9d;--rule:#e4dcc7;--pos-deep:#2a5f43;--neg:#a8412c;--neg-soft:#ecd7cf;
+    --serif:'Newsreader','Georgia',serif;--sans:'IBM Plex Sans',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',monospace;
+  }
+  html,body{
+    min-height:100vh;background:#f6f1e6;color:var(--ink);
+    font-family:var(--sans);-webkit-font-smoothing:antialiased;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .card{
+    background:var(--card);border:1px solid var(--rule);
+    padding:40px 44px 36px;width:100%;max-width:360px;
+  }
+  .brand{
+    font-family:var(--serif);font-weight:600;font-style:italic;
+    font-size:36px;letter-spacing:-.025em;color:var(--ink);margin-bottom:6px;
+  }
+  .brand em{color:var(--pos-deep)}
+  .sub{
+    font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-3);font-weight:500;margin-bottom:28px;
+  }
+  .error{
+    font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--neg);background:var(--neg-soft);padding:9px 12px;
+    margin-bottom:18px;font-weight:600;
+  }
+  input[type="password"]{
+    display:block;width:100%;background:var(--paper);border:1px solid var(--rule);
+    font-family:var(--mono);font-size:14px;color:var(--ink);
+    padding:12px 14px;outline:none;margin-bottom:12px;
+  }
+  input[type="password"]:focus{border-color:var(--ink)}
+  input[type="password"]::placeholder{color:var(--ink-4);font-size:12px;letter-spacing:.08em}
+  button{
+    display:block;width:100%;background:var(--ink);border:none;
+    color:#f6f1e6;font-family:var(--sans);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;font-weight:700;padding:13px;cursor:pointer;
+    transition:background .15s;
+  }
+  button:hover{background:var(--pos-deep)}
+  .note{
+    margin-top:16px;font-family:var(--sans);font-size:10.5px;
+    color:var(--ink-4);letter-spacing:.08em;text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">Me<em>Dea</em></div>
+  <div class="sub">Admin access</div>
+  {% if error %}
+  <div class="error">Token not recognised — try again</div>
+  {% endif %}
+  <form method="POST" action="/login" autocomplete="off">
+    <input type="password" name="token" placeholder="Enter admin token"
+      autocomplete="current-password" autofocus spellcheck="false"/>
+    <button type="submit">Enter</button>
+  </form>
+  <div class="note">Token is never stored in your browser history.</div>
+</div>
+</body>
+</html>
