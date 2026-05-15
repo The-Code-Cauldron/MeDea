@@ -710,13 +710,13 @@ def _log_pageview():
 
 _SELF_PROMOS = {
     'top': {
-        'advertiser': 'QuantumProtect',
-        'url':        'https://quantumprotection-production.up.railway.app',
-        'headline':   'QuantumProtect',
-        'strapline':  'Post-quantum cryptography. Protect your data against the threats already coming.',
-        'cta':        'Explore free →',
-        'bg_color':   '#0f1a2e',
-        'accent':     '#2a5f43',
+        'advertiser': 'Investigator',
+        'url':        'https://investigator-production-3d5b.up.railway.app',
+        'headline':   'Investigator',
+        'strapline':  'Fraud intelligence and investigative tools. Built by a practitioner for practitioners.',
+        'cta':        'Open the tool →',
+        'bg_color':   '#1a1a2e',
+        'accent':     '#e94560',
         'self_promo': True,
     },
     'mid': {
@@ -730,13 +730,13 @@ _SELF_PROMOS = {
         'self_promo': True,
     },
     'bottom': {
-        'advertiser': 'GitHub Sponsors',
-        'url':        'https://github.com/sponsors/The-Architect-Neo',
-        'headline':   'Support MeDea',
-        'strapline':  'Independent journalism costs time. Sponsor the editor and keep the signal running.',
-        'cta':        'Sponsor →',
-        'bg_color':   '#161b22',
-        'accent':     '#238636',
+        'advertiser': 'QuantumProtect',
+        'url':        'https://quantumprotection-production.up.railway.app',
+        'headline':   'QuantumProtect',
+        'strapline':  'Post-quantum cryptography. Protect your data against the threats already coming.',
+        'cta':        'Explore free →',
+        'bg_color':   '#0f1a2e',
+        'accent':     '#2a5f43',
         'self_promo': True,
     },
 }
