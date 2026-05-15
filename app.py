@@ -877,16 +877,19 @@ def _log_pageview():
         device = 'mobile' if any(m in ua for m in ('mobile', 'android', 'iphone', 'ipad')) else 'desktop'
         with _db_conn() as conn:
             with conn.cursor() as cur:
+                # Check if this IP+device already has a record today
                 cur.execute("""
-                    INSERT INTO page_views (device, ip_hash)
-                    SELECT %s, %s
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM page_views
-                        WHERE ip_hash = %s
-                        AND device    = %s
-                        AND visited_at >= CURRENT_DATE
-                    )
-                """, (device, ih, ih, device))
+                    SELECT id FROM page_views
+                    WHERE ip_hash = %s AND device = %s AND visited_at >= CURRENT_DATE
+                    LIMIT 1
+                """, (ih, device))
+                row = cur.fetchone()
+                if row:
+                    # Refresh timestamp — keeps unique visitor count accurate
+                    # but 'readers now' query sees the current visit
+                    cur.execute("UPDATE page_views SET visited_at = NOW() WHERE id = %s", (row[0],))
+                else:
+                    cur.execute("INSERT INTO page_views (device, ip_hash) VALUES (%s, %s)", (device, ih))
             conn.commit()
     except Exception:
         pass
