@@ -15,8 +15,15 @@
     --serif:'Newsreader','Georgia',serif;--sans:'IBM Plex Sans',system-ui,sans-serif;
     --mono:'IBM Plex Mono',monospace;
   }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#141310;--card:#1c1a15;--ink:#ece4d2;--ink-2:#b8b09e;
+      --ink-3:#807a6c;--ink-4:#534e44;--rule:#2a2720;
+      --pos-deep:#7cc295;--neg:#d7836c;--neg-soft:#3a2017;
+    }
+  }
   html,body{
-    min-height:100vh;background:#f6f1e6;color:var(--ink);
+    min-height:100vh;background:var(--paper);color:var(--ink);
     font-family:var(--sans);-webkit-font-smoothing:antialiased;
     display:flex;align-items:center;justify-content:center;
   }
