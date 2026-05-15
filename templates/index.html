@@ -113,7 +113,7 @@
   ::selection{background:var(--pos-soft);color:var(--pos-deep)}
   img{display:block;max-width:100%}
 
-  .wrap{max-width:1240px;margin:0 auto;padding:28px 32px 80px}
+  .wrap{max-width:1440px;margin:0 auto;padding:28px clamp(24px,2.8vw,60px) 80px}
 
   /* ───── Masthead ───── */
   .masthead{
@@ -288,7 +288,7 @@
   .stories{
     margin-top:40px;
     display:grid;grid-template-columns: 1.4fr 1fr;
-    gap:48px;align-items:stretch;
+    gap:clamp(32px,4vw,64px);align-items:stretch;
   }
   /* Aside fills its grid cell height */
   .stories > aside{
@@ -461,6 +461,9 @@
   .sources .section-head{margin-bottom:18px;padding-bottom:14px}
   .sources-grid{
     display:grid;grid-template-columns:repeat(2, 1fr);gap:0 36px;
+  }
+  @media(min-width:1300px){
+    .sources-grid{grid-template-columns:repeat(3,1fr)}
   }
   .src-row{
     display:grid;grid-template-columns: 1fr 110px 78px;gap:14px;align-items:center;
