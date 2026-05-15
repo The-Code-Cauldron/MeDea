@@ -57,7 +57,7 @@ FEEDS = [
     ('The Conversation Africa', 'https://theconversation.com/africa/articles.atom', 'Africa',        'https://theconversation.com/africa'),
     ('Asia Times',          'https://asiatimes.com/feed/',                          'Asia',          'https://asiatimes.com'),
     ('Telesur English',     'https://www.telesurenglish.net/rss/',                  'Latin America', 'https://www.telesurenglish.net'),
-    ('Arab News',           'https://www.arabnews.com/rss.xml',                     'Middle East',   'https://www.arabnews.com'),
+    ('Middle East Monitor', 'https://www.middleeastmonitor.com/feed/',               'Middle East',   'https://www.middleeastmonitor.com'),
     ('Mail & Guardian',     'https://mg.co.za/feed/',                               'Africa',        'https://mg.co.za'),
 ]
 
