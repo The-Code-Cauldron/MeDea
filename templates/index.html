@@ -349,6 +349,16 @@
   /* aside column (sentiments + sources, etc) */
   .aside-section{margin-top:48px}
   .aside-section:first-of-type{margin-top:0}
+  /* Filtered + Held side by side */
+  .aside-lower{
+    display:grid;grid-template-columns:1fr 1fr;gap:20px;
+    align-items:start;margin-top:24px;
+  }
+  .aside-lower .filtered-strip,
+  .aside-lower .flagged-strip{margin-top:0}
+  .aside-lower .filtered-strip .story .title{font-size:14.5px}
+  .aside-lower .flagged-strip .story .title{font-size:14px}
+  @media(max-width:1000px){.aside-lower{grid-template-columns:1fr}}
 
   /* filtered list — quieter look */
   .filtered-strip{
@@ -1148,6 +1158,7 @@
       </section>
       {% endif %}
 
+      <div class="aside-lower">
       <div class="filtered-strip">
         <div class="head">
           <h3>What we filtered out</h3>
@@ -1211,6 +1222,7 @@
           {% endif %}
         </div>
       </div>
+      </div><!-- aside-lower -->
     </aside>
   </section>
 

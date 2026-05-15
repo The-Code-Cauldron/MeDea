@@ -954,7 +954,7 @@ def pwa_manifest():
 def service_worker():
     from flask import make_response
     sw = """
-const CACHE = 'medea-v1';
+const CACHE = 'medea-v2';
 const OFFLINE = '/offline';
 
 self.addEventListener('install', e => {
