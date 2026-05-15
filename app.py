@@ -56,7 +56,8 @@ FEEDS = [
     ('IPS News',            'https://www.ipsnews.net/feed/',                        'Global South',  'https://www.ipsnews.net'),
     ('The Conversation Africa', 'https://theconversation.com/africa/articles.atom', 'Africa',        'https://theconversation.com/africa'),
     ('Asia Times',          'https://asiatimes.com/feed/',                          'Asia',          'https://asiatimes.com'),
-    ('Telesur English',     'https://www.telesurenglish.net/rss/',                  'Latin America', 'https://www.telesurenglish.net'),
+    ('Buenos Aires Herald', 'https://buenosairesherald.com/feed',                   'Latin America', 'https://buenosairesherald.com'),
+    ('Brasil Wire',         'https://www.brasilwire.com/feed/',                     'Latin America', 'https://www.brasilwire.com'),
     ('Middle East Monitor', 'https://www.middleeastmonitor.com/feed/',               'Middle East',   'https://www.middleeastmonitor.com'),
     ('Mail & Guardian',     'https://mg.co.za/feed/',                               'Africa',        'https://mg.co.za'),
 ]
