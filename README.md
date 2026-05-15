@@ -31,15 +31,9 @@ Python · Flask · VADER Sentiment · feedparser · psycopg2 · Neon Postgres ·
 
 ---
 
-## Environment variables (Railway)
+## Configuration
 
-| Variable | Required | Purpose |
-|---|---|---|
-| `DATABASE_URL` | Yes | Neon Postgres connection string |
-| `DISPATCH_ADMIN_TOKEN` | Yes | Admin password |
-| `FLASK_SECRET_KEY` | Yes | Session signing — must be set for persistent sessions |
-| `GITHUB_WEBHOOK_SECRET` | Optional | Verifies GitHub Sponsors events |
-| `PATREON_WEBHOOK_SECRET` | Optional | Verifies Patreon events |
+Requires environment variables set in Railway. Not documented here.
 
 ---
 
