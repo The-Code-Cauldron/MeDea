@@ -190,12 +190,14 @@
   /* ───── Analytics panel ───── */
   .analytics-panel{
     margin-top:12px;padding:14px 0 4px;border-top:1px dashed var(--rule);
-    display:grid;grid-template-columns:repeat(4,1fr) auto;gap:0;
+    display:grid;grid-template-columns:repeat(5,1fr);gap:0;
   }
   .an-cell{
     padding:8px 16px;border-right:1px solid var(--rule-soft);
   }
   .an-cell:last-child{border-right:none}
+  @media(max-width:900px){.analytics-panel{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:560px){.analytics-panel{grid-template-columns:repeat(2,1fr)}}
   .an-val{
     font-family:var(--mono);font-size:20px;font-weight:500;color:var(--ink);
     font-variant-numeric:tabular-nums;letter-spacing:-.02em;
