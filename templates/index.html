@@ -250,7 +250,7 @@
   .stories{
     margin-top:40px;
     display:grid;grid-template-columns: 1.4fr 1fr;
-    gap:48px;
+    gap:48px;align-items:start;
   }
   .section-head{
     display:flex;align-items:baseline;justify-content:space-between;gap:14px;
@@ -587,9 +587,11 @@
   .dispatch-section{
     margin-top:48px;padding-top:28px;border-top:1px solid var(--ink);
   }
-  /* Inside aside — no top border, no extra margin */
+  /* Inside aside — no top border, tightened margins */
   .aside-dispatch{margin-top:0;padding-top:0;border-top:none}
-  .aside-os{margin-top:24px;padding-top:0;border-top:none}
+  .aside-dispatch .dispatch-card{margin-top:12px}
+  .aside-os{margin-top:16px;padding-top:0;border-top:none}
+  .aside-os .os-card{margin-top:12px}
   .dispatch-card{
     margin-top:20px;background:var(--card);border:1px solid var(--rule);
   }
@@ -699,7 +701,7 @@
   .fulfill-btn:hover{background:var(--pos-deep);border-color:var(--pos-deep);color:var(--paper)}
   .fulfill-btn.done{opacity:.4;cursor:default;pointer-events:none}
   .dispatch-empty{
-    display:flex;align-items:center;gap:12px;padding:28px 0;
+    display:flex;align-items:center;gap:12px;padding:18px 0;
     font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
     color:var(--ink-4);animation:wire-idle 3.5s ease-in-out infinite;
   }
@@ -1117,7 +1119,8 @@
         </div>
       </section>
 
-      <!-- OpinionSays -->
+      <!-- OpinionSays — hidden if no opinion and not admin -->
+      {% if opinion or admin %}
       <section class="os-section aside-os">
         <div class="section-head">
           <h2 class="ttl"><em>OS</em> — OpinionSays</h2>
@@ -1140,11 +1143,10 @@
             <span class="os-disclaimer">Opinion only &nbsp;·&nbsp; Entertainment purposes &nbsp;·&nbsp; Not advice</span>
             <span class="os-ts">{{ opinion.updated_at }}</span>
           </div>
-          {% elif not admin %}
-          <div class="os-empty">Nothing on the wire yet.</div>
           {% endif %}
         </div>
       </section>
+      {% endif %}
 
       <div class="filtered-strip">
         <div class="head">
