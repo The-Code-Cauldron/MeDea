@@ -774,6 +774,16 @@ def index():
     d['ad_top']               = _get_ad('top')
     d['ad_mid']               = _get_ad('mid')
     d['ad_bottom']            = _get_ad('bottom')
+    # Geo-feed
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    cc = session.get('geo_country')
+    if not cc:
+        cc = _get_country(ip)
+        session['geo_country'] = cc
+    d['regional_stories'], d['country_code'] = _get_regional_stories(
+        cc, d['pro'], d['con'], d['flagged']
+    )
+    d['country_name'] = _country_name(cc)
     _log_pageview()
     return render_template('index.html', **d)
 
@@ -895,6 +905,98 @@ def _get_ad(slot='mid'):
         return dict(row) if row else _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
     except Exception:
         return _SELF_PROMOS.get(slot, _SELF_PROMOS['mid'])
+
+
+# ── Geo-feed ──────────────────────────────────────────────────────────────────
+
+_REGION_SOURCES = {
+    'GB': ['The Guardian','Sky News','The Independent','Byline Times','Declassified UK','New Statesman','Novara Media','UnHerd','The Canary'],
+    'IE': ['The Guardian','openDemocracy','Byline Times'],
+    'US': ['ProPublica','The Intercept','Democracy Now'],
+    'CA': ['ProPublica','The Intercept','Democracy Now'],
+    'AU': ['RNZ Pacific','The Conversation UK'],
+    'NZ': ['RNZ Pacific'],
+    'ZA': ['Mail & Guardian','The Conversation Africa'],
+    'NG': ['The Conversation Africa','IPS News'],
+    'KE': ['The Conversation Africa','IPS News'],
+    'GH': ['The Conversation Africa','IPS News'],
+    'ET': ['The Conversation Africa','IPS News'],
+    'IN': ['Asia Times','IPS News'],
+    'PK': ['Asia Times','IPS News'],
+    'JP': ['Asia Times'],
+    'SG': ['Asia Times'],
+    'PH': ['Asia Times'],
+    'ID': ['Asia Times'],
+    'TH': ['Asia Times'],
+    'AR': ['Buenos Aires Herald','Brasil Wire'],
+    'BR': ['Brasil Wire','Buenos Aires Herald'],
+    'MX': ['Buenos Aires Herald','IPS News'],
+    'CO': ['IPS News','Buenos Aires Herald'],
+    'CL': ['Buenos Aires Herald','IPS News'],
+    'IL': ['Middle East Monitor','Al-Monitor'],
+    'PS': ['Middle East Monitor','Middle East Eye'],
+    'EG': ['Middle East Monitor','Middle East Eye'],
+    'SA': ['Middle East Monitor'],
+    'JO': ['Middle East Monitor','Al-Monitor'],
+    'LB': ['Middle East Eye','Al-Monitor'],
+    'IQ': ['Middle East Eye','Al-Monitor'],
+    'UA': ['Bellingcat','openDemocracy','Deutsche Welle'],
+    'RU': ['Bellingcat','openDemocracy'],
+    'FR': ['RFI English','Euronews','Deutsche Welle'],
+    'DE': ['Deutsche Welle','Euronews'],
+    'IT': ['Euronews','Deutsche Welle'],
+    'ES': ['Euronews','Deutsche Welle'],
+    'PL': ['Deutsche Welle','openDemocracy'],
+    'SE': ['Deutsche Welle','Euronews'],
+    'NO': ['Deutsche Welle','Euronews'],
+    'NL': ['Deutsche Welle','Euronews'],
+    'BE': ['Euronews','Deutsche Welle'],
+    'CH': ['Deutsche Welle','Euronews'],
+    'AT': ['Deutsche Welle','Euronews'],
+    'CR': ['Buenos Aires Herald','IPS News'],  # Costa Rica — nod of the hat
+}
+
+_GEO_SESSION = requests.Session()
+_GEO_SESSION.headers.update({'User-Agent': 'MeDea/2.0 geo'})
+
+
+def _get_country(ip):
+    if not ip or ip in ('127.0.0.1', '::1', '0.0.0.0'):
+        return 'XX'
+    try:
+        resp = _GEO_SESSION.get(
+            f'http://ip-api.com/json/{ip}?fields=countryCode',
+            timeout=2,
+        )
+        return resp.json().get('countryCode', 'XX') or 'XX'
+    except Exception:
+        return 'XX'
+
+
+def _get_regional_stories(country_code, pro, con, flagged, limit=6):
+    sources = _REGION_SOURCES.get(country_code, [])
+    if not sources:
+        return [], 'XX'
+    all_scored = pro + con + flagged
+    stories = [s for s in all_scored if s.get('source') in sources]
+    stories.sort(key=lambda x: x.get('pub_ts') or 0, reverse=True)
+    return stories[:limit], country_code
+
+
+def _country_name(cc):
+    names = {
+        'GB':'United Kingdom','IE':'Ireland','US':'United States','CA':'Canada',
+        'AU':'Australia','NZ':'New Zealand','ZA':'South Africa','NG':'Nigeria',
+        'KE':'Kenya','GH':'Ghana','ET':'Ethiopia','IN':'India','PK':'Pakistan',
+        'JP':'Japan','SG':'Singapore','PH':'Philippines','ID':'Indonesia','TH':'Thailand',
+        'AR':'Argentina','BR':'Brazil','MX':'Mexico','CO':'Colombia','CL':'Chile',
+        'IL':'Israel','PS':'Palestine','EG':'Egypt','SA':'Saudi Arabia','JO':'Jordan',
+        'LB':'Lebanon','IQ':'Iraq','UA':'Ukraine','RU':'Russia','FR':'France',
+        'DE':'Germany','IT':'Italy','ES':'Spain','PL':'Poland','SE':'Sweden',
+        'NO':'Norway','NL':'Netherlands','BE':'Belgium','CH':'Switzerland','AT':'Austria',
+        'CR':'Costa Rica',
+    }
+    return names.get(cc, cc)
 
 
 def _get_total_visitors():

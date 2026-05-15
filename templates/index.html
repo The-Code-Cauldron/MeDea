@@ -454,6 +454,49 @@
   }
   .pill.paywall:hover{color:var(--ink);border-color:var(--ink-2)}
 
+  /* ───── Your Signal (geo-feed) ───── */
+  .geo-section{
+    margin-top:36px;padding-top:24px;border-top:1px solid var(--rule);
+  }
+  .geo-section .section-head .ttl em{color:var(--pos-deep)}
+  .geo-flag{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    color:var(--ink-4);padding:3px 8px;border:1px solid var(--rule);
+    border-radius:2px;text-transform:uppercase;
+  }
+  .geo-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:20px;
+  }
+  .geo-card{
+    background:var(--card);border:1px solid var(--rule);
+    padding:16px 18px;
+  }
+  .geo-card .gc-topic{
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:700;color:var(--ink-4);margin-bottom:8px;display:flex;
+    align-items:center;gap:6px;
+  }
+  .geo-card .gc-label-pro{color:var(--pos-deep)}
+  .geo-card .gc-label-con{color:var(--neg)}
+  .geo-card .gc-label-flag{color:var(--flag)}
+  .geo-card .gc-title{
+    font-family:var(--serif);font-weight:500;font-size:16px;line-height:1.3;
+    letter-spacing:-.005em;color:var(--ink);
+    font-variation-settings:"opsz" 18;
+  }
+  .geo-card .gc-title a:hover{color:var(--pos-deep)}
+  .geo-card .gc-meta{
+    margin-top:8px;font-family:var(--sans);font-size:10.5px;color:var(--ink-4);
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .geo-card .gc-src{color:var(--ink-3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:10px}
+  .geo-none{
+    font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink-3);
+    padding:12px 0;font-weight:300;
+  }
+  @media(max-width:900px){.geo-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.geo-grid{grid-template-columns:1fr}}
+
   /* ───── Topic filter ───── */
   .topic-bar{
     margin-top:28px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
@@ -1018,6 +1061,39 @@
     <button class="topic-chip" data-filter="{{ t }}" onclick="filterTopic(this)">{{ t }} <span class="chip-count">{{ tcount }}</span></button>
     {% endfor %}
   </div>
+  {% endif %}
+
+  <!-- ───── Your Signal (geo-feed) ───── -->
+  {% if regional_stories or country_code not in ('XX', '') %}
+  <section class="geo-section">
+    <div class="section-head">
+      <h2 class="ttl">Your <em>Signal</em></h2>
+      <span class="geo-flag">{{ country_name if country_name != country_code else 'Global' }}</span>
+    </div>
+    {% if regional_stories %}
+    <div class="geo-grid">
+      {% for h in regional_stories %}
+      <div class="geo-card">
+        <div class="gc-topic">
+          <span class="gc-label-{{ h.label }}">{{ 'Pro' if h.label == 'pro' else 'Con' if h.label == 'con' else 'Held' }}</span>
+          {{ h.topic }}
+          {% if h.pub_ago %}<span style="margin-left:auto">{{ h.pub_ago }}</span>{% endif %}
+        </div>
+        <div class="gc-title">
+          <a href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
+        </div>
+        <div class="gc-meta">
+          <span class="gc-src">{{ h.source }}</span>
+          <span>{{ h.bias }}</span>
+          {% if h.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ h.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="geo-none">No regional stories in this cycle. Global feed covering you.</p>
+    {% endif %}
+  </section>
   {% endif %}
 
   <!-- ───── Stories ───── -->
