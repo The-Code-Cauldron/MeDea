@@ -977,10 +977,29 @@ def _get_regional_stories(country_code, pro, con, flagged, limit=6):
     sources = _REGION_SOURCES.get(country_code, [])
     if not sources:
         return [], 'XX'
-    all_scored = pro + con + flagged
-    stories = [s for s in all_scored if s.get('source') in sources]
-    stories.sort(key=lambda x: x.get('pub_ts') or 0, reverse=True)
-    return stories[:limit], country_code
+
+    r_pro  = [s for s in pro     if s.get('source') in sources]
+    r_flag = [s for s in flagged if s.get('source') in sources]
+    r_con  = [s for s in con     if s.get('source') in sources]
+
+    # Promote high-confidence flagged stories to pro for regional display.
+    # sarcasm_risk is too conservative for regional good news — lead with positive.
+    promoted  = []
+    held_rest = []
+    for s in r_flag:
+        if s.get('compound', 0) >= 0.2:
+            sc = dict(s)       # copy — never mutate main state
+            sc['label'] = 'pro'
+            promoted.append(sc)
+        else:
+            held_rest.append(s)
+
+    pos_pool = sorted(r_pro + promoted, key=lambda x: x.get('compound', 0), reverse=True)
+    neg_pool = sorted(held_rest,        key=lambda x: x.get('compound', 0), reverse=True)
+    con_pool = sorted(r_con,            key=lambda x: x.get('compound', 0))
+
+    ordered = (pos_pool + neg_pool + con_pool)[:limit]
+    return ordered, country_code
 
 
 def _country_name(cc):
