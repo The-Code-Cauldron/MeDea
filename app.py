@@ -280,6 +280,14 @@ def _db_fetch(limit=8):
             d = dict(r)
             if hasattr(d.get('submitted_at'), 'strftime'):
                 d['submitted_at'] = d['submitted_at'].strftime('%d %b %Y %H:%M UTC')
+            try:
+                domain = urlparse(d.get('url', '')).netloc.lower().lstrip('www.')
+                if domain in _PINNED_PRO:
+                    d['compound']     = 1.0
+                    d['label']        = 'pro'
+                    d['sarcasm_risk'] = False
+            except Exception:
+                pass
             result.append(d)
         return result
     except Exception as exc:
