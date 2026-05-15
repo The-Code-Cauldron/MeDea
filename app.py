@@ -56,7 +56,7 @@ FEEDS = [
     ('IPS News',            'https://www.ipsnews.net/feed/',                        'Global South',  'https://www.ipsnews.net'),
     ('The Conversation Africa', 'https://theconversation.com/africa/articles.atom', 'Africa',        'https://theconversation.com/africa'),
     ('Asia Times',          'https://asiatimes.com/feed/',                          'Asia',          'https://asiatimes.com'),
-    ('Buenos Aires Herald', 'https://buenosairesherald.com/feed',                   'Latin America', 'https://buenosairesherald.com'),
+    ('Global Voices',       'https://globalvoices.org/feed/',                       'Latin America', 'https://globalvoices.org'),
     ('Brasil Wire',         'https://www.brasilwire.com/feed/',                     'Latin America', 'https://www.brasilwire.com'),
     ('Middle East Monitor', 'https://www.middleeastmonitor.com/feed/',               'Middle East',   'https://www.middleeastmonitor.com'),
     ('Mail & Guardian',     'https://mg.co.za/feed/',                               'Africa',        'https://mg.co.za'),
@@ -361,6 +361,7 @@ _state = {
     'total': 0,
     'ready': False,
 }
+_source_errors = {}  # {name: consecutive_error_count}
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
@@ -676,13 +677,19 @@ def _fetch():
         all_pro.extend(capped)
         all_con.extend(r['con'])
         all_flagged.extend(r['flagged'])
+        has_error = r.get('error', False)
+        if has_error:
+            _source_errors[name] = _source_errors.get(name, 0) + 1
+        else:
+            _source_errors[name] = 0
         sources[name] = {
-            'pro':     len(r['pro']),
-            'con':     len(r['con']),
-            'flagged': len(r['flagged']),
-            'error':   r.get('error', False),
-            'bias':    bias,
-            'website': website,
+            'pro':             len(r['pro']),
+            'con':             len(r['con']),
+            'flagged':         len(r['flagged']),
+            'error':           has_error,
+            'consecutive_err': _source_errors.get(name, 0),
+            'bias':            bias,
+            'website':         website,
         }
 
     # Deduplicate across all pools

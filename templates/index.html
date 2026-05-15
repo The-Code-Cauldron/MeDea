@@ -1615,6 +1615,15 @@
       <h2 class="ttl">Where we <em>read from</em></h2>
       <span class="meta">{{ sources|length }} newsrooms · this cycle</span>
     </div>
+    <p style="font-family:var(--serif);font-size:15px;font-weight:300;font-style:italic;color:var(--ink-2);line-height:1.55;margin-bottom:20px;max-width:72ch;font-variation-settings:'opsz' 16">
+      Every 30 minutes we pull headlines from {{ sources|length }} independent newsrooms across six continents.
+      The bar shows each source's signal mix this cycle —
+      <span style="color:var(--pos-deep);font-style:normal;font-weight:600">green</span> is positive,
+      <span style="color:var(--neg);font-style:normal;font-weight:600">red</span> filtered out,
+      <span style="color:var(--flag);font-style:normal;font-weight:600">amber</span> held for judgement.
+      The bias label reflects editorial position, not a judgement.
+      Sources showing offline are checked again next cycle.
+    </p>
     <div class="sources-grid">
       {% for name, s in sources.items() %}
       {% set p = s.pro or 0 %}
@@ -1637,7 +1646,7 @@
         </div>
         <div class="src-counts">
           {% if s.error %}
-            <span class="err">offline</span>
+            <span class="err" title="{{ s.consecutive_err }} consecutive missed cycles">offline{% if s.consecutive_err > 2 %} ×{{ s.consecutive_err }}{% endif %}</span>
           {% else %}
             <span class="p">{{ p }}</span><span style="color:var(--ink-4)">·</span><span class="c">{{ c }}</span><span style="color:var(--ink-4)">·</span><span class="f">{{ f }}</span>
           {% endif %}
@@ -1671,7 +1680,7 @@
 </div>
 
 <!-- ───── Floating mobile ad ───── -->
-{% if ready and not ad_sidebar.self_promo %}
+{% if ready %}
 <div class="ad-float" id="ad-float"
      style="background:{{ ad_sidebar.bg_color }};border-top:3px solid {{ ad_sidebar.accent }}">
   <button class="ad-float-dismiss" onclick="document.getElementById('ad-float').style.display='none'" aria-label="Dismiss">×</button>
