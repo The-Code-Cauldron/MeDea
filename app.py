@@ -421,10 +421,12 @@ def _init_db():
                         cta        TEXT,
                         bg_color   TEXT DEFAULT '#0f0f0f',
                         accent     TEXT DEFAULT '#c9a84c',
+                        image_url  TEXT,
                         active     BOOLEAN DEFAULT TRUE,
                         created_at TIMESTAMPTZ DEFAULT NOW()
                     )
                 """)
+                cur.execute("ALTER TABLE ads ADD COLUMN IF NOT EXISTS image_url TEXT")
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS sponsors (
                         id           SERIAL PRIMARY KEY,
@@ -774,6 +776,7 @@ def index():
     d['ad_top']               = _get_ad('top')
     d['ad_mid']               = _get_ad('mid')
     d['ad_bottom']            = _get_ad('bottom')
+    d['ad_sidebar']           = _get_ad('sidebar')
     # Geo-feed
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
     cc = session.get('geo_country')
@@ -886,6 +889,17 @@ _SELF_PROMOS = {
         'cta':        'Explore free →',
         'bg_color':   '#0f1a2e',
         'accent':     '#2a5f43',
+        'self_promo': True,
+    },
+    'sidebar': {
+        'advertiser': 'MeDea',
+        'url':        'https://medea-production-dd4b.up.railway.app',
+        'headline':   'MeDea',
+        'strapline':  'Signal over noise. 32 global sources. Scored hourly. On every phone on earth.',
+        'cta':        'Share MeDea →',
+        'bg_color':   '#1c1a16',
+        'accent':     '#2a5f43',
+        'image_url':  None,
         'self_promo': True,
     },
 }
@@ -1266,8 +1280,8 @@ def api_ad_save():
             with conn.cursor() as cur:
                 cur.execute('UPDATE ads SET active=FALSE WHERE slot=%s', (slot,))
                 cur.execute("""
-                    INSERT INTO ads (slot, advertiser, url, headline, strapline, cta, bg_color, accent, active)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,TRUE)
+                    INSERT INTO ads (slot, advertiser, url, headline, strapline, cta, bg_color, accent, image_url, active)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE)
                 """, (
                     slot,
                     data.get('advertiser',''),
@@ -1277,6 +1291,7 @@ def api_ad_save():
                     data.get('cta','Visit'),
                     data.get('bg_color','#0f0f0f'),
                     data.get('accent','#c9a84c'),
+                    data.get('image_url') or None,
                 ))
             conn.commit()
     except Exception as exc:

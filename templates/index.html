@@ -447,6 +447,37 @@
   .src-counts .f{color:var(--flag)}
   .src-counts .err{color:var(--neg);font-family:var(--sans);font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
 
+  /* ───── Sidebar ad slot ───── */
+  .ad-sidebar-wrap{margin-top:20px}
+  .ad-sidebar-banner{
+    display:flex;flex-direction:column;text-decoration:none;
+    border:1px solid var(--rule);overflow:hidden;
+    transition:opacity .15s;
+  }
+  .ad-sidebar-banner:hover{opacity:.88}
+  .ad-sidebar-img{
+    width:100%;height:160px;object-fit:cover;display:block;
+  }
+  .ad-sidebar-body{
+    padding:14px 16px 16px;
+  }
+  .ad-sidebar-brand{
+    font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:.18em;
+    text-transform:uppercase;margin-bottom:6px;
+  }
+  .ad-sidebar-strapline{
+    font-family:var(--serif);font-size:13.5px;font-style:italic;font-weight:300;
+    line-height:1.4;color:rgba(255,255,255,.75);margin-bottom:12px;
+  }
+  .ad-sidebar-cta{
+    display:inline-block;font-family:var(--sans);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;font-weight:700;padding:8px 14px;
+  }
+  .ad-sidebar-label{
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--ink-4);font-weight:600;margin-bottom:6px;
+  }
+
   /* ───── Archive link ───── */
   .pill.paywall{
     color:var(--ink-3);background:transparent;border:1px solid var(--rule);
@@ -1279,6 +1310,43 @@
       </section>
       {% endif %}
 
+      <!-- Sidebar ad slot — fills the dead space below OS -->
+      <div class="ad-sidebar-wrap">
+        <div class="ad-sidebar-label">{% if ad_sidebar.self_promo %}From the editor{% else %}Advertisement{% endif %}</div>
+        <a class="ad-sidebar-banner"
+           href="{{ ad_sidebar.url }}" target="_blank" rel="noopener sponsored"
+           style="background:{{ ad_sidebar.bg_color }};border-top:3px solid {{ ad_sidebar.accent }}">
+          {% if ad_sidebar.image_url %}
+          <img class="ad-sidebar-img" src="{{ ad_sidebar.image_url }}" alt="{{ ad_sidebar.headline }}" loading="lazy"/>
+          {% endif %}
+          <div class="ad-sidebar-body" style="background:{{ ad_sidebar.bg_color }}">
+            <div class="ad-sidebar-brand" style="color:{{ ad_sidebar.accent }}">{{ ad_sidebar.headline }}</div>
+            <div class="ad-sidebar-strapline">{{ ad_sidebar.strapline }}</div>
+            <div class="ad-sidebar-cta" style="color:{{ ad_sidebar.bg_color }};background:{{ ad_sidebar.accent }}">{{ ad_sidebar.cta }}</div>
+          </div>
+        </a>
+        {% if admin %}
+        <div class="ad-admin-bar">
+          <span class="ad-slot-tag">sidebar slot</span>
+          <button class="ad-swap-btn" onclick="showAdForm('sidebar')" type="button">Swap ad</button>
+          {% if not ad_sidebar.self_promo %}<button class="ad-swap-btn" onclick="clearAd('sidebar')" type="button" style="color:var(--neg)">Clear</button>{% endif %}
+        </div>
+        <div class="ad-form" id="ad-form-sidebar" style="display:none">
+          <div class="ad-form-grid">
+            <input class="ad-input" id="af-sidebar-advertiser" placeholder="Advertiser name" type="text"/>
+            <input class="ad-input" id="af-sidebar-url"        placeholder="URL (required)"  type="url"/>
+            <input class="ad-input" id="af-sidebar-headline"   placeholder="Headline"         type="text"/>
+            <input class="ad-input" id="af-sidebar-strapline"  placeholder="Strapline"        type="text"/>
+            <input class="ad-input" id="af-sidebar-cta"        placeholder="CTA text"         type="text"/>
+            <input class="ad-input" id="af-sidebar-bg"         placeholder="Background hex"   type="text"/>
+            <input class="ad-input" id="af-sidebar-accent"     placeholder="Accent hex"       type="text"/>
+            <input class="ad-input" id="af-sidebar-image_url"  placeholder="Image URL (optional — makes it pop)" type="url" style="grid-column:1/-1"/>
+          </div>
+          <button class="dispatch-btn" onclick="saveAd('sidebar')" type="button" style="margin-top:10px">Go live</button>
+        </div>
+        {% endif %}
+      </div>
+
     </aside>
   </section>
 
@@ -1780,9 +1848,10 @@
       url:        g('url'),
       headline:   g('headline'),
       strapline:  g('strapline'),
-      cta:        g('cta')    || 'Visit',
-      bg_color:   g('bg')     || '#0f0f0f',
-      accent:     g('accent') || '#c9a84c',
+      cta:        g('cta')       || 'Visit',
+      bg_color:   g('bg')        || '#0f0f0f',
+      accent:     g('accent')    || '#c9a84c',
+      image_url:  g('image_url') || '',
     };
     if (!data.url){ alert('URL is required'); return; }
     fetch('/api/ad',{method:'POST',headers:{'Content-Type':'application/json'},
