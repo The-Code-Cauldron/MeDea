@@ -276,6 +276,13 @@ def _init_db():
                     )
                 """)
                 cur.execute("""
+                    CREATE TABLE IF NOT EXISTS page_views (
+                        id         SERIAL PRIMARY KEY,
+                        visited_at TIMESTAMPTZ DEFAULT NOW(),
+                        device     TEXT
+                    )
+                """)
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS sponsors (
                         id           SERIAL PRIMARY KEY,
                         platform     TEXT    NOT NULL,
@@ -604,6 +611,8 @@ def index():
     d['sponsors']             = _get_sponsors(limit=12) if _DB_URL else []
     d['unfulfilled_sponsors'] = _get_sponsors(limit=50, unfulfilled_only=True) if (_DB_URL and d['admin']) else []
     d['opinion']              = _get_opinion()
+    d['traffic']              = _get_traffic() if d['admin'] else None
+    _log_pageview()
     return render_template('index.html', **d)
 
 
@@ -643,6 +652,40 @@ def _login_rate_ok(ip):
         times.append(now)
         _login_attempts[ip] = times
         return True
+
+
+def _log_pageview():
+    if not _DB_URL:
+        return
+    try:
+        ua     = (request.headers.get('User-Agent') or '').lower()
+        device = 'mobile' if any(m in ua for m in ('mobile','android','iphone','ipad')) else 'desktop'
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('INSERT INTO page_views (device) VALUES (%s)', (device,))
+            conn.commit()
+    except Exception:
+        pass
+
+
+def _get_traffic():
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT
+                        COUNT(*) FILTER (WHERE visited_at >= NOW() - INTERVAL '1 day')  AS today,
+                        COUNT(*) FILTER (WHERE visited_at >= NOW() - INTERVAL '7 days') AS week,
+                        COUNT(*)                                                          AS total,
+                        COUNT(*) FILTER (WHERE device = 'mobile')                        AS mobile,
+                        COUNT(*) FILTER (WHERE device = 'desktop')                       AS desktop
+                    FROM page_views
+                """)
+                row = cur.fetchone()
+        return {'today': row[0], 'week': row[1], 'total': row[2],
+                'mobile': row[3], 'desktop': row[4]}
+    except Exception:
+        return None
 
 
 def _admin_check(data=None):

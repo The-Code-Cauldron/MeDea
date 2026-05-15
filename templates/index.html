@@ -178,6 +178,18 @@
   .submast .right span{margin-left:24px}
   .submast .updated{color:var(--ink-2)}
   .submast strong{color:var(--ink);font-weight:600;letter-spacing:.06em;text-transform:none}
+  .traffic-strip{
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+    padding:8px 0 0;
+    font-family:var(--mono);font-size:11px;color:var(--ink-3);
+    letter-spacing:.06em;border-top:1px dashed var(--rule);margin-top:8px;
+  }
+  .traffic-strip .tl{
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.24em;
+    text-transform:uppercase;font-weight:700;color:var(--ink-4);
+  }
+  .traffic-strip .tv{color:var(--ink);font-weight:500}
+  .traffic-strip .sep{color:var(--rule)}
 
   /* ───── Lede (the score as a sentence) ───── */
   .lede{
@@ -836,6 +848,20 @@
       <span><strong style="color:var(--flag)">{{ flagged_count }}</strong> held</span>
     </div>
   </div>
+  {% if admin and traffic %}
+  <div class="traffic-strip">
+    <span class="tl">Traffic</span>
+    <span><span class="tv">{{ traffic.today }}</span> today</span>
+    <span class="sep">·</span>
+    <span><span class="tv">{{ traffic.week }}</span> this week</span>
+    <span class="sep">·</span>
+    <span><span class="tv">{{ traffic.total }}</span> all time</span>
+    <span class="sep">·</span>
+    <span><span class="tv">{{ traffic.mobile }}</span> mobile</span>
+    <span class="sep">/</span>
+    <span><span class="tv">{{ traffic.desktop }}</span> desktop</span>
+  </div>
+  {% endif %}
 
   <!-- ───── Lede ───── -->
   <section class="lede">
