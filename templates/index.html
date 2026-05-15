@@ -549,14 +549,14 @@
     transition:opacity .15s;
   }
   .ad-banner:hover{opacity:.88}
-  .ad-dynamic{border-left:3px solid #c9a84c}
+  .ad-dynamic{border-left:4px solid transparent}
   .ad-dynamic .ad-brand{
     font-family:var(--sans);font-size:18px;font-weight:800;letter-spacing:.22em;
     text-transform:uppercase;flex-shrink:0;
   }
   .ad-dynamic .ad-strapline{
     font-family:var(--serif);font-size:14px;font-weight:400;font-style:italic;
-    color:#d4cfc4;line-height:1.4;flex:1;
+    color:rgba(255,255,255,.78);line-height:1.4;flex:1;min-width:0;
   }
   .ad-dynamic .ad-cta{
     font-family:var(--sans);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
@@ -871,7 +871,7 @@
     <div class="ad-label">{% if ad.self_promo %}From the editor{% else %}Advertisement{% endif %}</div>
     <a class="ad-banner ad-dynamic"
        href="{{ ad.url }}" target="_blank" rel="noopener sponsored"
-       style="background:{{ ad.bg_color }};border-left-color:{{ ad.accent }}">
+       style="background:{{ ad.bg_color }};border-left:4px solid {{ ad.accent }}">
       <div class="ad-brand" style="color:{{ ad.accent }}">{{ ad.headline }}</div>
       <div class="ad-strapline">{{ ad.strapline }}</div>
       <div class="ad-cta" style="color:{{ ad.bg_color }};background:{{ ad.accent }}">{{ ad.cta }}</div>
