@@ -616,6 +616,7 @@ def index():
     d['unfulfilled_sponsors'] = _get_sponsors(limit=50, unfulfilled_only=True) if (_DB_URL and d['admin']) else []
     d['opinion']              = _get_opinion()
     d['traffic']              = _get_traffic() if d['admin'] else None
+    d['total_visitors']       = _get_total_visitors() if _DB_URL else 0
     _log_pageview()
     return render_template('index.html', **d)
 
@@ -687,6 +688,16 @@ def _log_pageview():
             conn.commit()
     except Exception:
         pass
+
+
+def _get_total_visitors():
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT COUNT(*) FROM page_views')
+                return cur.fetchone()[0] or 0
+    except Exception:
+        return 0
 
 
 def _get_traffic():

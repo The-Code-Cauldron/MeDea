@@ -438,6 +438,31 @@
   .src-counts .f{color:var(--flag)}
   .src-counts .err{color:var(--neg);font-family:var(--sans);font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
 
+  /* ───── Visitor counter ───── */
+  .visitor-counter{
+    margin-top:48px;text-align:center;
+  }
+  .counter-digits{
+    display:inline-flex;gap:4px;
+  }
+  .digit{
+    font-family:var(--mono);font-size:40px;font-weight:500;
+    color:var(--pos-deep);
+    background:var(--card);border:1px solid var(--rule);
+    width:42px;height:56px;
+    display:flex;align-items:center;justify-content:center;
+    font-variant-numeric:tabular-nums;line-height:1;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.06);
+  }
+  [data-theme="dark"] .digit{
+    color:#7cc295;background:#141310;
+    box-shadow:inset 0 1px 4px rgba(0,0,0,.4),0 0 8px rgba(124,194,149,.08);
+  }
+  .counter-label{
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--ink-4);font-weight:600;margin-top:10px;
+  }
+
   /* ───── Footer ───── */
   footer.colophon{
     margin-top:72px;padding-top:22px;border-top:1px solid var(--ink);
@@ -1203,6 +1228,15 @@
       {% endfor %}
     </div>
   </section>
+
+  <!-- ───── Visitor counter ───── -->
+  <div class="visitor-counter">
+    <div class="counter-digits">
+      {% set n = "%06d"|format(total_visitors) %}
+      {% for d in n %}<span class="digit">{{ d }}</span>{% endfor %}
+    </div>
+    <div class="counter-label">Readers reached</div>
+  </div>
 
   <footer class="colophon">
     <div class="l"><em>MeDea</em> &nbsp;·&nbsp; <a href="https://the-architect-neo.github.io/" target="_blank" rel="noopener" style="color:inherit;border-bottom:1px solid currentColor;padding-bottom:1px">The Architect</a> &nbsp;·&nbsp; © 2026 &nbsp;·&nbsp; Refreshes hourly</div>
