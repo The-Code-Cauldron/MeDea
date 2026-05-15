@@ -763,6 +763,81 @@ def api_refresh():
     return jsonify({'status': 'fetching'})
 
 
+# ── PWA ───────────────────────────────────────────────────────────────────────
+
+@app.route('/manifest.json')
+def pwa_manifest():
+    from flask import make_response
+    import json
+    manifest = {
+        'name':             'MeDea — News worth reading',
+        'short_name':       'MeDea',
+        'description':      'Signal over noise. The news that matters.',
+        'start_url':        '/',
+        'scope':            '/',
+        'display':          'standalone',
+        'background_color': '#f6f1e6',
+        'theme_color':      '#1c1a16',
+        'orientation':      'portrait-primary',
+        'categories':       ['news'],
+        'lang':             'en-GB',
+        'icons': [
+            {
+                'src':     '/static/icons/icon.svg',
+                'sizes':   'any',
+                'type':    'image/svg+xml',
+                'purpose': 'any maskable',
+            }
+        ],
+        'screenshots': [],
+        'related_applications': [],
+        'prefer_related_applications': False,
+    }
+    resp = make_response(json.dumps(manifest, indent=2))
+    resp.headers['Content-Type'] = 'application/manifest+json'
+    return resp
+
+
+@app.route('/sw.js')
+def service_worker():
+    from flask import make_response
+    sw = """
+const CACHE = 'medea-v1';
+const OFFLINE = '/offline';
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(['/', OFFLINE])).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).catch(() => caches.match(OFFLINE)));
+    return;
+  }
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});
+"""
+    resp = make_response(sw.strip())
+    resp.headers['Content-Type']         = 'application/javascript'
+    resp.headers['Service-Worker-Allowed'] = '/'
+    return resp
+
+
+@app.route('/offline')
+def offline():
+    return render_template('offline.html')
+
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 @app.route('/login', methods=['GET', 'POST'])
