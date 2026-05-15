@@ -45,6 +45,17 @@ FEEDS = [
     ('ProPublica',          'https://feeds.propublica.org/propublica/main',         'Investigative', 'https://www.propublica.org'),
     ('The Intercept',       'https://theintercept.com/feed/?rss',                   'Investigative', 'https://theintercept.com'),
     ('Democracy Now',       'https://www.democracynow.org/democracynow.rss',        'Independent',   'https://www.democracynow.org'),
+    # Global expansion
+    ('Deutsche Welle',      'https://rss.dw.com/rdf/rss-en-all',                   'Europe · Global','https://www.dw.com/en/'),
+    ('Euronews',            'https://www.euronews.com/rss',                         'Europe',        'https://www.euronews.com'),
+    ('RFI English',         'https://www.rfi.fr/en/rss',                            'Global',        'https://www.rfi.fr/en'),
+    ('RNZ Pacific',         'https://www.rnz.co.nz/rss/pacific.xml',               'Pacific',       'https://www.rnz.co.nz/international/pacific-news'),
+    ('IPS News',            'https://www.ipsnews.net/feed/',                        'Global South',  'https://www.ipsnews.net'),
+    ('The Conversation Africa', 'https://theconversation.com/africa/articles.atom', 'Africa',        'https://theconversation.com/africa'),
+    ('Asia Times',          'https://asiatimes.com/feed/',                          'Asia',          'https://asiatimes.com'),
+    ('Telesur English',     'https://www.telesurenglish.net/rss/',                  'Latin America', 'https://www.telesurenglish.net'),
+    ('Arab News',           'https://www.arabnews.com/rss.xml',                     'Middle East',   'https://www.arabnews.com'),
+    ('Mail & Guardian',     'https://mg.co.za/feed/',                               'Africa',        'https://mg.co.za'),
 ]
 
 PRO_SOURCE_CAP      = 3
