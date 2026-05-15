@@ -477,6 +477,9 @@
   .dispatch-section{
     margin-top:48px;padding-top:28px;border-top:1px solid var(--ink);
   }
+  /* Inside aside — no top border, no extra margin */
+  .aside-dispatch{margin-top:0;padding-top:0;border-top:none}
+  .aside-os{margin-top:24px;padding-top:0;border-top:none}
   .dispatch-card{
     margin-top:20px;background:var(--card);border:1px solid var(--rule);
   }
@@ -801,163 +804,6 @@
     </div>
   </section>
 
-  <!-- ───── The Dispatch ───── -->
-  <section class="dispatch-section">
-    <div class="section-head">
-      <h2 class="ttl">The <em>Dispatch</em></h2>
-      <span class="meta" id="dispatch-meta">
-        {% if not dispatch_live %}Offline — DATABASE_URL not set
-        {% elif admin %}{{ dispatches|length }} filed &middot; editing
-        {% else %}{{ dispatches|length }} filed &middot; curated
-        {% endif %}
-      </span>
-    </div>
-    <div class="dispatch-card">
-
-      {% if admin %}
-      <div class="dispatch-input-row">
-        <input type="url" class="dispatch-url" id="dispatch-url"
-          placeholder="Paste an article URL to file it"
-          autocomplete="off" spellcheck="false"/>
-        <button class="dispatch-btn" id="dispatch-btn" type="button">File it</button>
-        <button class="dispatch-admin" id="dispatch-admin-clear" type="button" title="Clear all">Clear all</button>
-      </div>
-      <div class="dispatch-headline-row">
-        <input type="text" class="dispatch-headline-input" id="dispatch-headline"
-          placeholder="Custom headline — leave blank to extract from URL"
-          autocomplete="off" spellcheck="false" maxlength="200"/>
-      </div>
-      {% endif %}
-
-      <div class="dispatch-feed" id="dispatch-feed">
-        {% if dispatches %}
-          {% for d in dispatches %}
-          <div class="dispatch-item" data-id="{{ d.id }}">
-            <div class="dispatch-badge dispatch-badge-{{ d.label }}">
-              {{ 'Pro' if d.label == 'pro' else 'Con' if d.label == 'con' else 'Held' }}
-              <span class="dscore">{{ '%+.2f'|format(d.compound) }}</span>
-            </div>
-            <div class="dispatch-item-body">
-              <div class="dispatch-title is-{{ d.label }}">
-                <a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.title }}</a>
-              </div>
-              <div class="dispatch-meta">
-                <span class="src">{{ d.source }}</span>
-                <span style="color:var(--ink-4)">&#183;</span>
-                <span class="ts">{{ d.submitted_at }}</span>
-                {% if d.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
-                {% if d.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
-                {% if d.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
-                {% if d.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
-              </div>
-            </div>
-            {% if admin %}
-            <button class="dispatch-del" onclick="deleteDispatch({{ d.id }})" title="Remove">&#x2715;</button>
-            {% endif %}
-          </div>
-          {% endfor %}
-        {% else %}
-          <div class="dispatch-empty">
-            <span class="dispatch-cursor"></span>{% if admin %}Wire ready. Paste a URL above.{% else %}Nothing filed yet.{% endif %}
-          </div>
-        {% endif %}
-      </div>
-
-      <div class="dispatch-sponsor">
-        For more news like this,
-        <span class="fee-tip">
-          <a href="https://github.com/sponsors/The-Architect-Neo" target="_blank" rel="noopener">sponsor the editor</a>
-          <span class="fee-tip-box">
-            <strong>GitHub Sponsors</strong><br>
-            0% platform fee &nbsp;·&nbsp; <em>~3% card only</em><br>
-            £10 given → ~£9.70 arrives.<br>
-            <br>
-            <strong>Patreon — web browser</strong><br>
-            5–12% platform + ~3% card<br>
-            £10 given → ~£8.50–£9.20 arrives.<br>
-            <br>
-            <strong>Patreon — iOS app</strong><br>
-            Apple takes 30% before Patreon sees a penny.<br>
-            £10 given → ~£6.00–£6.30 arrives.<br>
-            <br>
-            <strong>Patreon — Android app</strong><br>
-            Google takes 15% + Patreon cut.<br>
-            £10 given → ~£7.30–£7.70 arrives.<br>
-            <br>
-            <em>Always use a browser. Never the app.</em>
-          </span>
-        </span>
-        — keep him working 24/7 for you.
-      </div>
-      {% if sponsors %}
-      <div class="sponsor-ticker">
-        <span class="tl">Supported by</span>
-        {% for s in sponsors %}
-          {% if s.sponsor_name %}
-            <span class="sn">{{ s.sponsor_name }}</span>
-          {% else %}
-            <span class="anon">Anonymous</span>
-          {% endif %}
-          {% if not loop.last %}<span class="sep">·</span>{% endif %}
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-  </section>
-
-  <!-- ───── OpinionSays ───── -->
-  <section class="os-section">
-    <div class="section-head">
-      <h2 class="ttl"><em>OS</em> — OpinionSays</h2>
-      <span class="meta">The Architect speaks</span>
-    </div>
-    <div class="os-card" id="os-card">
-      {% if admin %}
-      <div class="os-edit-row">
-        <textarea class="os-textarea" id="os-textarea" maxlength="1000"
-          placeholder="Say something. The wire is open.">{{ opinion.body if opinion else '' }}</textarea>
-        <div class="os-actions">
-          <button class="os-save" id="os-save" type="button">Publish</button>
-          <button class="os-clr" id="os-clr" type="button">Clear</button>
-        </div>
-      </div>
-      {% endif %}
-      {% if opinion %}
-      <div class="os-body" id="os-body">{{ opinion.body }}</div>
-      <div class="os-foot">
-        <span class="os-disclaimer">Opinion only &nbsp;·&nbsp; Entertainment purposes &nbsp;·&nbsp; Not advice</span>
-        <span class="os-ts">{{ opinion.updated_at }}</span>
-      </div>
-      {% elif not admin %}
-      <div class="os-empty">Nothing on the wire yet.</div>
-      {% endif %}
-    </div>
-  </section>
-
-  {% if admin and unfulfilled_sponsors %}
-  <!-- ───── Sponsor log (admin only) ───── -->
-  <section class="sponsor-log">
-    <div class="section-head">
-      <h2 class="ttl">Shoutouts <em>outstanding</em></h2>
-      <span class="meta">{{ unfulfilled_sponsors|length }} pending</span>
-    </div>
-    {% for s in unfulfilled_sponsors %}
-    <div class="sponsor-log-row" id="sl-{{ s.id }}">
-      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
-        <span class="platform {{ s.platform }}">{{ s.platform }}</span>
-        <span style="font-family:var(--serif);font-weight:500;font-size:16px">
-          {{ s.sponsor_name or 'Anonymous' }}
-        </span>
-        {% if s.tier_name %}<span class="bias">{{ s.tier_name }}</span>{% endif %}
-        {% if s.amount_cents %}<span style="font-family:var(--mono);font-size:12px;color:var(--pos-deep)">£{{ '%.2f'|format(s.amount_cents / 100) }}/mo</span>{% endif %}
-        <span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">{{ s.sponsored_at }}</span>
-      </div>
-      <button class="fulfill-btn" id="fb-{{ s.id }}" onclick="fulfillSponsor({{ s.id }})">Mark done</button>
-    </div>
-    {% endfor %}
-  </section>
-  {% endif %}
-
   <!-- ───── Stories ───── -->
   <section class="stories">
     <!-- COL LEFT: Worth Reading -->
@@ -1007,8 +853,136 @@
       {% endif %}
     </div>
 
-    <!-- COL RIGHT: Filtered + Flagged -->
+    <!-- COL RIGHT: Dispatch · OS · Filtered · Flagged -->
     <aside>
+
+      <!-- The Dispatch -->
+      <section class="dispatch-section aside-dispatch">
+        <div class="section-head">
+          <h2 class="ttl">The <em>Dispatch</em></h2>
+          <span class="meta" id="dispatch-meta">
+            {% if not dispatch_live %}Offline — DATABASE_URL not set
+            {% elif admin %}{{ dispatches|length }} filed &middot; editing
+            {% else %}{{ dispatches|length }} filed &middot; curated
+            {% endif %}
+          </span>
+        </div>
+        <div class="dispatch-card">
+          {% if admin %}
+          <div class="dispatch-input-row">
+            <input type="url" class="dispatch-url" id="dispatch-url"
+              placeholder="Paste an article URL to file it"
+              autocomplete="off" spellcheck="false"/>
+            <button class="dispatch-btn" id="dispatch-btn" type="button">File it</button>
+            <button class="dispatch-admin" id="dispatch-admin-clear" type="button" title="Clear all">Clear all</button>
+          </div>
+          <div class="dispatch-headline-row">
+            <input type="text" class="dispatch-headline-input" id="dispatch-headline"
+              placeholder="Custom headline — leave blank to extract from URL"
+              autocomplete="off" spellcheck="false" maxlength="200"/>
+          </div>
+          {% endif %}
+          <div class="dispatch-feed" id="dispatch-feed">
+            {% if dispatches %}
+              {% for d in dispatches %}
+              <div class="dispatch-item" data-id="{{ d.id }}">
+                <div class="dispatch-badge dispatch-badge-{{ d.label }}">
+                  {{ 'Pro' if d.label == 'pro' else 'Con' if d.label == 'con' else 'Held' }}
+                  <span class="dscore">{{ '%+.2f'|format(d.compound) }}</span>
+                </div>
+                <div class="dispatch-item-body">
+                  <div class="dispatch-title is-{{ d.label }}">
+                    <a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.title }}</a>
+                  </div>
+                  <div class="dispatch-meta">
+                    <span class="src">{{ d.source }}</span>
+                    <span style="color:var(--ink-4)">&#183;</span>
+                    <span class="ts">{{ d.submitted_at }}</span>
+                    {% if d.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
+                    {% if d.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
+                    {% if d.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
+                    {% if d.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+                  </div>
+                </div>
+                {% if admin %}
+                <button class="dispatch-del" onclick="deleteDispatch({{ d.id }})" title="Remove">&#x2715;</button>
+                {% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="dispatch-empty">
+                <span class="dispatch-cursor"></span>{% if admin %}Wire ready. Paste a URL above.{% else %}Nothing filed yet.{% endif %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="dispatch-sponsor">
+            For more news like this,
+            <span class="fee-tip">
+              <a href="https://github.com/sponsors/The-Architect-Neo" target="_blank" rel="noopener">sponsor the editor</a>
+              <span class="fee-tip-box">
+                <strong>GitHub Sponsors</strong><br>
+                0% platform fee &nbsp;·&nbsp; <em>~3% card only</em><br>
+                £10 given → ~£9.70 arrives.<br>
+                <br>
+                <strong>Patreon — web browser</strong><br>
+                5–12% platform + ~3% card<br>
+                £10 given → ~£8.50–£9.20 arrives.<br>
+                <br>
+                <strong>Patreon — iOS app</strong><br>
+                Apple takes 30% before Patreon sees a penny.<br>
+                £10 given → ~£6.00–£6.30 arrives.<br>
+                <br>
+                <strong>Patreon — Android app</strong><br>
+                Google takes 15% + Patreon cut.<br>
+                £10 given → ~£7.30–£7.70 arrives.<br>
+                <br>
+                <em>Always use a browser. Never the app.</em>
+              </span>
+            </span>
+            — keep him working 24/7 for you.
+          </div>
+          {% if sponsors %}
+          <div class="sponsor-ticker">
+            <span class="tl">Supported by</span>
+            {% for s in sponsors %}
+              {% if s.sponsor_name %}<span class="sn">{{ s.sponsor_name }}</span>
+              {% else %}<span class="anon">Anonymous</span>{% endif %}
+              {% if not loop.last %}<span class="sep">·</span>{% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- OpinionSays -->
+      <section class="os-section aside-os">
+        <div class="section-head">
+          <h2 class="ttl"><em>OS</em> — OpinionSays</h2>
+          <span class="meta">The Architect speaks</span>
+        </div>
+        <div class="os-card" id="os-card">
+          {% if admin %}
+          <div class="os-edit-row">
+            <textarea class="os-textarea" id="os-textarea" maxlength="1000"
+              placeholder="Say something. The wire is open.">{{ opinion.body if opinion else '' }}</textarea>
+            <div class="os-actions">
+              <button class="os-save" id="os-save" type="button">Publish</button>
+              <button class="os-clr" id="os-clr" type="button">Clear</button>
+            </div>
+          </div>
+          {% endif %}
+          {% if opinion %}
+          <div class="os-body" id="os-body">{{ opinion.body }}</div>
+          <div class="os-foot">
+            <span class="os-disclaimer">Opinion only &nbsp;·&nbsp; Entertainment purposes &nbsp;·&nbsp; Not advice</span>
+            <span class="os-ts">{{ opinion.updated_at }}</span>
+          </div>
+          {% elif not admin %}
+          <div class="os-empty">Nothing on the wire yet.</div>
+          {% endif %}
+        </div>
+      </section>
+
       <div class="filtered-strip">
         <div class="head">
           <h3>What we filtered out</h3>
@@ -1074,6 +1048,27 @@
       </div>
     </aside>
   </section>
+
+  {% if admin and unfulfilled_sponsors %}
+  <section class="sponsor-log">
+    <div class="section-head">
+      <h2 class="ttl">Shoutouts <em>outstanding</em></h2>
+      <span class="meta">{{ unfulfilled_sponsors|length }} pending</span>
+    </div>
+    {% for s in unfulfilled_sponsors %}
+    <div class="sponsor-log-row" id="sl-{{ s.id }}">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+        <span class="platform {{ s.platform }}">{{ s.platform }}</span>
+        <span style="font-family:var(--serif);font-weight:500;font-size:16px">{{ s.sponsor_name or 'Anonymous' }}</span>
+        {% if s.tier_name %}<span class="bias">{{ s.tier_name }}</span>{% endif %}
+        {% if s.amount_cents %}<span style="font-family:var(--mono);font-size:12px;color:var(--pos-deep)">£{{ '%.2f'|format(s.amount_cents / 100) }}/mo</span>{% endif %}
+        <span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">{{ s.sponsored_at }}</span>
+      </div>
+      <button class="fulfill-btn" id="fb-{{ s.id }}" onclick="fulfillSponsor({{ s.id }})">Mark done</button>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
 
   <!-- ───── Sources ───── -->
   <section class="sources">
