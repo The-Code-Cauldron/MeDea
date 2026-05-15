@@ -527,9 +527,13 @@ def api_submit():
         return jsonify({'error': 'No URL provided'}), 400
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
-    title = _extract_title(url)
-    if not title:
-        return jsonify({'error': 'Could not read a headline from that URL'}), 422
+    custom_title = data.get('custom_title', '').strip()
+    if custom_title:
+        title = custom_title
+    else:
+        title = _extract_title(url)
+        if not title:
+            return jsonify({'error': 'Could not read a headline from that URL'}), 422
     vs       = _analyzer.polarity_scores(title)
     compound = round(vs['compound'], 3)
     if _FORCE_NEGATIVE_RE.search(title):

@@ -504,7 +504,28 @@
     white-space:nowrap;transition:color .15s;flex-shrink:0;
   }
   .dispatch-admin:hover{color:var(--neg)}
+  .dispatch-headline-row{
+    border-bottom:1px solid var(--rule);
+  }
+  .dispatch-headline-input{
+    display:block;width:100%;background:transparent;border:none;
+    font-family:var(--serif);font-size:15px;color:var(--ink);
+    padding:12px 18px;outline:none;
+    font-variation-settings:"opsz" 16;
+  }
+  .dispatch-headline-input::placeholder{color:var(--ink-4);font-style:italic;font-family:var(--serif)}
+  .dispatch-headline-input:focus{background:var(--paper-2)}
   .dispatch-feed{padding:0 28px}
+  .dispatch-sponsor{
+    padding:18px 28px;border-top:1px dashed var(--rule);
+    font-family:var(--serif);font-style:italic;font-weight:300;
+    font-size:15px;line-height:1.55;color:var(--ink-2);
+    font-variation-settings:"opsz" 16;
+  }
+  .dispatch-sponsor a{
+    color:var(--pos-deep);border-bottom:1px solid var(--pos-soft);padding-bottom:1px;
+  }
+  .dispatch-sponsor a:hover{border-color:var(--pos-deep)}
   .dispatch-empty{
     display:flex;align-items:center;gap:12px;padding:28px 0;
     font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
@@ -798,6 +819,11 @@
         <button class="dispatch-btn" id="dispatch-btn" type="button">File it</button>
         <button class="dispatch-admin" id="dispatch-admin-clear" type="button" title="Clear all">Clear all</button>
       </div>
+      <div class="dispatch-headline-row">
+        <input type="text" class="dispatch-headline-input" id="dispatch-headline"
+          placeholder="Custom headline — leave blank to extract from URL"
+          autocomplete="off" spellcheck="false" maxlength="200"/>
+      </div>
       {% endif %}
 
       <div class="dispatch-feed" id="dispatch-feed">
@@ -831,6 +857,9 @@
             <span class="dispatch-cursor"></span>{% if admin %}Wire ready. Paste a URL above.{% else %}Nothing filed yet.{% endif %}
           </div>
         {% endif %}
+      </div>
+      <div class="dispatch-sponsor">
+        For more news like this, <a href="https://github.com/sponsors/The-Architect-Neo" target="_blank" rel="noopener">sponsor the editor</a> — keep him working 24/7 for you.
       </div>
     </div>
   </section>
@@ -1082,13 +1111,15 @@
 
   function fileDispatch(){
     const inp = document.getElementById('dispatch-url');
+    const hed = document.getElementById('dispatch-headline');
     const btn = document.getElementById('dispatch-btn');
     let url = (inp.value||'').trim();
     if (!url) return;
     if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+    const custom_title = hed ? (hed.value||'').trim() : '';
     btn.disabled = true; btn.textContent = 'Filing…';
     fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url, token:DISPATCH_TOKEN})})
+      body:JSON.stringify({url, token:DISPATCH_TOKEN, custom_title})})
     .then(r=>r.json())
     .then(data=>{
       btn.disabled=false; btn.textContent='File it';
@@ -1098,7 +1129,7 @@
         feed.prepend(e); setTimeout(()=>e.remove(),4000);
         return;
       }
-      inp.value='';
+      inp.value=''; if(hed) hed.value='';
       fetch('/api/dispatch').then(r=>r.json()).then(rows=>{
         _lastDispatchId=rows.length?rows[0].id:null;
         renderFeed(rows,true); updateMeta(rows.length);
