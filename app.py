@@ -250,6 +250,13 @@ def _init_db():
                     )
                 """)
                 cur.execute("""
+                    CREATE TABLE IF NOT EXISTS opinion_says (
+                        id         SERIAL PRIMARY KEY,
+                        body       TEXT NOT NULL,
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS sponsors (
                         id           SERIAL PRIMARY KEY,
                         platform     TEXT    NOT NULL,
@@ -578,12 +585,31 @@ def index():
     d['admin_token']          = admin_token if d['admin'] else ''
     d['sponsors']             = _get_sponsors(limit=12) if _DB_URL else []
     d['unfulfilled_sponsors'] = _get_sponsors(limit=50, unfulfilled_only=True) if (_DB_URL and d['admin']) else []
+    d['opinion']              = _get_opinion()
     return render_template('index.html', **d)
 
 
 @app.route('/api/dispatch')
 def api_dispatch():
     return jsonify(_db_fetch() if _DB_URL else [])
+
+
+def _get_opinion():
+    if not _DB_URL:
+        return None
+    try:
+        with _db_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute('SELECT * FROM opinion_says ORDER BY updated_at DESC LIMIT 1')
+                row = cur.fetchone()
+        if row:
+            d = dict(row)
+            if hasattr(d.get('updated_at'), 'strftime'):
+                d['updated_at'] = d['updated_at'].strftime('%d %b %Y %H:%M UTC')
+            return d
+    except Exception as exc:
+        log.error(f'_get_opinion failed: {exc}')
+    return None
 
 
 def _admin_check(data):
@@ -705,6 +731,46 @@ def api_progress():
 def api_refresh():
     threading.Thread(target=_fetch, daemon=True).start()
     return jsonify({'status': 'fetching'})
+
+
+# ── OpinionSays ───────────────────────────────────────────────────────────────
+
+@app.route('/api/opinion', methods=['POST'])
+def api_opinion_save():
+    data = request.get_json(silent=True) or {}
+    if not _admin_check(data):
+        return jsonify({'error': 'Not authorised'}), 403
+    body = data.get('body', '').strip()
+    if not body:
+        return jsonify({'error': 'No text provided'}), 400
+    if len(body) > 1000:
+        return jsonify({'error': 'Too long — 1000 characters max'}), 400
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('DELETE FROM opinion_says')
+                cur.execute('INSERT INTO opinion_says (body) VALUES (%s)', (body,))
+            conn.commit()
+    except Exception as exc:
+        log.error(f'opinion save failed: {exc}')
+        return jsonify({'error': 'Database error'}), 500
+    return jsonify({'status': 'saved', 'body': body})
+
+
+@app.route('/api/opinion/clear', methods=['POST'])
+def api_opinion_clear():
+    data = request.get_json(silent=True) or {}
+    if not _admin_check(data):
+        return jsonify({'error': 'Not authorised'}), 403
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('DELETE FROM opinion_says')
+            conn.commit()
+    except Exception as exc:
+        log.error(f'opinion clear failed: {exc}')
+        return jsonify({'error': 'Database error'}), 500
+    return jsonify({'status': 'cleared'})
 
 
 # ── Sponsor webhooks ──────────────────────────────────────────────────────────

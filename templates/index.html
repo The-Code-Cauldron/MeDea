@@ -642,6 +642,65 @@
   }
   @keyframes flash-in{from{background:var(--pos-paper)}to{background:transparent}}
 
+  /* ───── OpinionSays ───── */
+  .os-section{
+    margin-top:32px;padding-top:24px;border-top:1px solid var(--rule);
+  }
+  .os-card{
+    margin-top:16px;background:var(--card);border:1px solid var(--rule);
+    border-left:3px solid var(--ink);
+  }
+  .os-body{
+    padding:22px 26px 14px;
+    font-family:var(--serif);font-size:20px;font-weight:400;line-height:1.45;
+    color:var(--ink);letter-spacing:-.005em;text-wrap:pretty;
+    font-variation-settings:"opsz" 20;
+  }
+  .os-empty{
+    padding:22px 26px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-4);
+  }
+  .os-foot{
+    padding:0 26px 16px;display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:8px;
+  }
+  .os-disclaimer{
+    font-family:var(--sans);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-4);font-weight:600;
+  }
+  .os-ts{font-family:var(--mono);font-size:10.5px;color:var(--ink-4)}
+  .os-edit-row{
+    border-top:1px solid var(--rule);padding:14px 18px;display:flex;gap:0;
+  }
+  .os-textarea{
+    flex:1;background:transparent;border:none;resize:none;
+    font-family:var(--serif);font-size:16px;color:var(--ink);
+    outline:none;min-height:80px;line-height:1.5;
+    font-variation-settings:"opsz" 16;
+  }
+  .os-textarea::placeholder{color:var(--ink-4);font-style:italic}
+  .os-textarea:focus{background:var(--paper-2)}
+  .os-actions{
+    display:flex;flex-direction:column;gap:6px;justify-content:flex-start;
+    padding-left:14px;flex-shrink:0;
+  }
+  .os-save{
+    appearance:none;background:var(--ink);border:none;
+    color:var(--paper);font-family:var(--sans);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;font-weight:700;padding:9px 16px;cursor:pointer;
+    transition:background .15s;white-space:nowrap;
+  }
+  .os-save:hover{background:var(--pos-deep)}
+  .os-save:disabled{opacity:.5;cursor:not-allowed}
+  .os-clr{
+    appearance:none;background:transparent;border:1px solid var(--rule);
+    color:var(--ink-3);font-family:var(--sans);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;font-weight:600;padding:9px 16px;cursor:pointer;
+    transition:color .15s;white-space:nowrap;
+  }
+  .os-clr:hover{color:var(--neg);border-color:var(--neg)}
+
   /* responsive */
   @media (max-width: 1000px){
     .lede{grid-template-columns:1fr;gap:18px;align-items:start}
@@ -842,6 +901,35 @@
           {% if not loop.last %}<span class="sep">·</span>{% endif %}
         {% endfor %}
       </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ───── OpinionSays ───── -->
+  <section class="os-section">
+    <div class="section-head">
+      <h2 class="ttl"><em>OS</em> — OpinionSays</h2>
+      <span class="meta">The Architect speaks</span>
+    </div>
+    <div class="os-card" id="os-card">
+      {% if admin %}
+      <div class="os-edit-row">
+        <textarea class="os-textarea" id="os-textarea" maxlength="1000"
+          placeholder="Say something. The wire is open.">{{ opinion.body if opinion else '' }}</textarea>
+        <div class="os-actions">
+          <button class="os-save" id="os-save" type="button">Publish</button>
+          <button class="os-clr" id="os-clr" type="button">Clear</button>
+        </div>
+      </div>
+      {% endif %}
+      {% if opinion %}
+      <div class="os-body" id="os-body">{{ opinion.body }}</div>
+      <div class="os-foot">
+        <span class="os-disclaimer">Opinion only &nbsp;·&nbsp; Entertainment purposes &nbsp;·&nbsp; Not advice</span>
+        <span class="os-ts">{{ opinion.updated_at }}</span>
+      </div>
+      {% elif not admin %}
+      <div class="os-empty">Nothing on the wire yet.</div>
       {% endif %}
     </div>
   </section>
@@ -1285,6 +1373,48 @@
       const row = document.getElementById('sl-' + id);
       if (row) row.style.opacity = '0.35';
       if (btn) btn.textContent = 'Done';
+    });
+  }
+
+  /* ───── OpinionSays ───── */
+  (function initOS(){
+    const save = document.getElementById('os-save');
+    const clr  = document.getElementById('os-clr');
+    if (save) save.addEventListener('click', saveOpinion);
+    if (clr)  clr.addEventListener('click', clearOpinion);
+  })();
+
+  function saveOpinion(){
+    const ta   = document.getElementById('os-textarea');
+    const btn  = document.getElementById('os-save');
+    const body = (ta.value||'').trim();
+    if (!body) return;
+    btn.disabled=true; btn.textContent='Saving…';
+    fetch('/api/opinion',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({body, token:DISPATCH_TOKEN})})
+    .then(r=>r.json()).then(data=>{
+      btn.disabled=false; btn.textContent='Publish';
+      if (data.error){ alert(data.error); return; }
+      let el = document.getElementById('os-body');
+      if (!el){
+        el = document.createElement('div');
+        el.id = 'os-body'; el.className = 'os-body';
+        document.getElementById('os-card').appendChild(el);
+      }
+      el.textContent = data.body;
+    }).catch(()=>{ btn.disabled=false; btn.textContent='Publish'; });
+  }
+
+  function clearOpinion(){
+    if (!confirm('Clear OpinionSays?')) return;
+    fetch('/api/opinion/clear',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:DISPATCH_TOKEN})})
+    .then(r=>r.json()).then(data=>{
+      if (data.error){ alert(data.error); return; }
+      const el = document.getElementById('os-body');
+      if (el) el.remove();
+      const ta = document.getElementById('os-textarea');
+      if (ta) ta.value='';
     });
   }
 
