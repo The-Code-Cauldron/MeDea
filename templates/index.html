@@ -1323,6 +1323,14 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  function handleAuthError(data){
+    if (data && data.redirect){
+      if (confirm('Session expired. Go to login page?')) window.location.href = data.redirect;
+      return true;
+    }
+    return false;
+  }
+
   function dispatchItemHtml(d, flash){
     const lc    = d.label==='pro'?'pro':d.label==='con'?'con':'flagged';
     const lt    = d.label==='pro'?'Pro':d.label==='con'?'Con':'Held';
@@ -1409,6 +1417,7 @@
     .then(data=>{
       btn.disabled=false; btn.textContent='File it';
       if (data.error){
+        if (handleAuthError(data)) return;
         const feed=document.getElementById('dispatch-feed');
         const e=document.createElement('div'); e.className='dispatch-err'; e.textContent=data.error;
         feed.prepend(e); setTimeout(()=>e.remove(),4000);
@@ -1467,7 +1476,7 @@
       body:JSON.stringify({body})})
     .then(r=>r.json()).then(data=>{
       btn.disabled=false; btn.textContent='Publish';
-      if (data.error){ alert(data.error); return; }
+      if (data.error){ if(!handleAuthError(data)) alert(data.error); return; }
       let el = document.getElementById('os-body');
       if (!el){
         el = document.createElement('div');

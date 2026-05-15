@@ -649,13 +649,17 @@ def _admin_check(data=None):
     return False
 
 
+def _auth_error():
+    return jsonify({'error': 'Session expired — please log in again', 'redirect': '/login'}), 403
+
+
 @app.route('/api/submit', methods=['POST'])
 def api_submit():
     if not _DB_URL:
         return jsonify({'error': 'Dispatch not configured'}), 503
     data = request.get_json(silent=True) or {}
     if not _admin_check(data):
-        return jsonify({'error': 'Not authorised'}), 403
+        return _auth_error()
     url = data.get('url', '').strip()
     if not url:
         return jsonify({'error': 'No URL provided'}), 400
@@ -710,7 +714,7 @@ def api_submit():
 @app.route('/api/dispatch/<int:item_id>', methods=['DELETE'])
 def api_dispatch_delete(item_id):
     if not _admin_check():
-        return jsonify({'error': 'Not authorised'}), 403
+        return _auth_error()
     try:
         with _db_conn() as conn:
             with conn.cursor() as cur:
@@ -726,7 +730,7 @@ def api_dispatch_delete(item_id):
 def api_submit_clear():
     data = request.get_json(silent=True) or {}
     if not _admin_check(data):
-        return jsonify({'error': 'Not authorised'}), 403
+        return _auth_error()
     try:
         _db_clear()
     except Exception as exc:
@@ -874,7 +878,7 @@ def logout():
 def api_opinion_save():
     data = request.get_json(silent=True) or {}
     if not _admin_check(data):
-        return jsonify({'error': 'Not authorised'}), 403
+        return _auth_error()
     body = data.get('body', '').strip()
     if not body:
         return jsonify({'error': 'No text provided'}), 400
@@ -896,7 +900,7 @@ def api_opinion_save():
 def api_opinion_clear():
     data = request.get_json(silent=True) or {}
     if not _admin_check(data):
-        return jsonify({'error': 'Not authorised'}), 403
+        return _auth_error()
     try:
         with _db_conn() as conn:
             with conn.cursor() as cur:
@@ -930,7 +934,7 @@ def webhook_github():
     if secret:
         expected = 'sha256=' + hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
         if not hmac.compare_digest(sig, expected):
-            return jsonify({'error': 'Bad signature'}), 403
+            return jsonify({'error': 'Bad signature'}), 401
     data        = request.get_json(silent=True) or {}
     action      = data.get('action', '')
     sponsorship = data.get('sponsorship', {})
@@ -956,7 +960,7 @@ def webhook_patreon():
     if secret:
         expected = hmac.new(secret.encode(), payload, hashlib.md5).hexdigest()
         if not hmac.compare_digest(sig, expected):
-            return jsonify({'error': 'Bad signature'}), 403
+            return jsonify({'error': 'Bad signature'}), 401
     data     = request.get_json(silent=True) or {}
     event    = request.headers.get('X-Patreon-Event', '')
     name     = None
@@ -987,7 +991,7 @@ def webhook_patreon():
 def api_sponsor_fulfill(sponsor_id):
     data = request.get_json(silent=True) or {}
     if not _admin_check(data):
-        return jsonify({'error': 'Not authorised'}), 403
+        return _auth_error()
     try:
         with _db_conn() as conn:
             with conn.cursor() as cur:
