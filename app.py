@@ -757,10 +757,12 @@ def _extract_title(url):
 def index():
     with _lock:
         d = {k: v for k, v in _state.items()}
-        d['pro']     = list(_state['pro'])
-        d['con']     = list(_state['con'])
-        d['flagged'] = list(_state['flagged'])
-        d['sources'] = dict(_state['sources'])
+        # Deep-copy story lists — each request gets independent dicts.
+        # Prevents any downstream mutation leaking into shared _state.
+        d['pro']     = [dict(s) for s in _state['pro']]
+        d['con']     = [dict(s) for s in _state['con']]
+        d['flagged'] = [dict(s) for s in _state['flagged']]
+        d['sources'] = {k: dict(v) for k, v in _state['sources'].items()}
     d['score_class']   = _score_class(d['score'])
     d['arc_path'], d['nx'], d['ny'] = _dial_arc(d['score'])
     d['description']   = _filter_description(d['score'], d['pro_count'], d['con_count'])

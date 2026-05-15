@@ -1579,6 +1579,14 @@
     });
   })();
 
+  /* Sync theme across all open tabs — storage fires in OTHER tabs when localStorage changes */
+  window.addEventListener('storage', function(e){
+    if (e.key === 'medea-theme' && e.newValue){
+      document.documentElement.setAttribute('data-theme', e.newValue);
+      syncThemeIcon();
+    }
+  });
+
   /* ───── Refresh ───── */
   let refreshing = false;
   function triggerRefresh(){
