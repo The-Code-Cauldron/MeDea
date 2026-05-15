@@ -428,6 +428,23 @@ def _init_db():
                 """)
                 cur.execute("ALTER TABLE ads ADD COLUMN IF NOT EXISTS image_url TEXT")
                 cur.execute("""
+                    CREATE TABLE IF NOT EXISTS ad_impressions (
+                        id      SERIAL PRIMARY KEY,
+                        ad_id   INTEGER,
+                        slot    TEXT,
+                        seen_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS story_clicks (
+                        id         SERIAL PRIMARY KEY,
+                        url_hash   TEXT,
+                        topic      TEXT,
+                        source     TEXT,
+                        clicked_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS sponsors (
                         id           SERIAL PRIMARY KEY,
                         platform     TEXT    NOT NULL,
@@ -1285,6 +1302,109 @@ self.addEventListener('fetch', e => {
 @app.route('/offline')
 def offline():
     return render_template('offline.html')
+
+
+# ── Intelligence layer ───────────────────────────────────────────────────────
+
+@app.route('/api/impression', methods=['POST'])
+def api_impression():
+    if not _DB_URL:
+        return jsonify({'ok': True})
+    data  = request.get_json(silent=True) or {}
+    ad_id = data.get('ad_id')
+    slot  = data.get('slot', '')
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('INSERT INTO ad_impressions (ad_id, slot) VALUES (%s,%s)', (ad_id, slot))
+            conn.commit()
+    except Exception:
+        pass
+    return jsonify({'ok': True})
+
+
+@app.route('/api/click', methods=['POST'])
+def api_click():
+    if not _DB_URL:
+        return jsonify({'ok': True})
+    data  = request.get_json(silent=True) or {}
+    url   = data.get('url', '')
+    topic = data.get('topic', 'General')
+    src   = data.get('source', '')
+    url_hash = hashlib.sha256(url.encode()).hexdigest()[:24] if url else None
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    'INSERT INTO story_clicks (url_hash, topic, source) VALUES (%s,%s,%s)',
+                    (url_hash, topic, src)
+                )
+            conn.commit()
+    except Exception:
+        pass
+    return jsonify({'ok': True})
+
+
+@app.route('/api/analytics')
+def api_analytics():
+    if not session.get('admin'):
+        return jsonify({'error': 'Forbidden'}), 403
+    if not _DB_URL:
+        return jsonify({})
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                # Impressions today
+                cur.execute("SELECT COUNT(*) FROM ad_impressions WHERE seen_at >= CURRENT_DATE")
+                imp_today = cur.fetchone()[0]
+                # Impressions this week
+                cur.execute("SELECT COUNT(*) FROM ad_impressions WHERE seen_at >= NOW() - INTERVAL '7 days'")
+                imp_week = cur.fetchone()[0]
+                # Top ad today
+                cur.execute("""
+                    SELECT a.advertiser, a.slot, COUNT(*) as c
+                    FROM ad_impressions i
+                    JOIN ads a ON a.id = i.ad_id
+                    WHERE i.seen_at >= CURRENT_DATE
+                    GROUP BY a.advertiser, a.slot
+                    ORDER BY c DESC LIMIT 1
+                """)
+                top_ad = cur.fetchone()
+                # Top topic today (story clicks)
+                cur.execute("""
+                    SELECT topic, COUNT(*) as c FROM story_clicks
+                    WHERE clicked_at >= CURRENT_DATE
+                    GROUP BY topic ORDER BY c DESC LIMIT 1
+                """)
+                top_topic = cur.fetchone()
+                # Story clicks today
+                cur.execute("SELECT COUNT(*) FROM story_clicks WHERE clicked_at >= CURRENT_DATE")
+                clicks_today = cur.fetchone()[0]
+                # Readers now (last 10 min)
+                cur.execute("""
+                    SELECT COUNT(DISTINCT ip_hash) FROM page_views
+                    WHERE visited_at >= NOW() - INTERVAL '10 minutes'
+                """)
+                readers_now = cur.fetchone()[0]
+                # Active sources this cycle
+                with _lock:
+                    sources_live = sum(1 for s in _state['sources'].values() if not s.get('error'))
+                    sources_total = len(_state['sources'])
+        return jsonify({
+            'imp_today':    imp_today,
+            'imp_week':     imp_week,
+            'clicks_today': clicks_today,
+            'readers_now':  readers_now,
+            'sources_live': sources_live,
+            'sources_total': sources_total,
+            'top_ad':    {'name': top_ad[0], 'slot': top_ad[1], 'count': top_ad[2]} if top_ad else None,
+            'top_topic': {'topic': top_topic[0], 'count': top_topic[1]} if top_topic else None,
+            'score':     _state.get('score'),
+            'est_revenue_today': round(imp_today / 1000 * 5, 2),  # £5 CPM estimate
+        })
+    except Exception as exc:
+        log.error(f'analytics: {exc}')
+        return jsonify({'error': str(exc)}), 500
 
 
 # ── Ad management ────────────────────────────────────────────────────────────

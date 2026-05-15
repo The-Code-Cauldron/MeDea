@@ -178,6 +178,42 @@
   .submast .right span{margin-left:24px}
   .submast .updated{color:var(--ink-2)}
   .submast strong{color:var(--ink);font-weight:600;letter-spacing:.06em;text-transform:none}
+  /* ───── Signal strength ───── */
+  .signal-strength{
+    display:inline-flex;align-items:center;gap:5px;margin-left:16px;
+  }
+  .sig-bar{
+    width:3px;border-radius:1px;background:var(--rule);
+    transition:background .4s,height .4s;
+  }
+  .sig-bar.on{background:var(--pos)}
+  /* ───── Analytics panel ───── */
+  .analytics-panel{
+    margin-top:12px;padding:14px 0 4px;border-top:1px dashed var(--rule);
+    display:grid;grid-template-columns:repeat(4,1fr) auto;gap:0;
+  }
+  .an-cell{
+    padding:8px 16px;border-right:1px solid var(--rule-soft);
+  }
+  .an-cell:last-child{border-right:none}
+  .an-val{
+    font-family:var(--mono);font-size:20px;font-weight:500;color:var(--ink);
+    font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+    transition:color .4s;
+  }
+  .an-val.flash{color:var(--pos-deep)}
+  .an-label{
+    font-family:var(--sans);font-size:9px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-4);font-weight:600;margin-top:2px;
+  }
+  .an-sub{
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .an-revenue{color:var(--pos-deep)}
+  /* ───── ProCon ticker ───── */
+  .ratio .num{transition:all .8s cubic-bezier(.23,1,.32,1)}
+  /* ───── Traffic strip ───── */
   .traffic-strip{
     display:flex;align-items:center;gap:20px;flex-wrap:wrap;
     padding:8px 0 0;
@@ -1079,6 +1115,13 @@
   <div class="submast">
     <div class="left">
       <strong>The signal report</strong> &nbsp;·&nbsp; A daily filter on {{ sources|length }} newsrooms
+      {% set live_count = sources.values() | rejectattr('error') | list | length %}
+      <span class="signal-strength" title="{{ live_count }}/{{ sources|length }} sources live">
+        {% for i in range(4) %}
+        <span class="sig-bar {% if i < (live_count / sources|length * 4)|int %}on{% endif %}"
+              style="height:{{ 5 + i * 3 }}px"></span>
+        {% endfor %}
+      </span>
     </div>
     <div class="right">
       <span><strong style="color:var(--pos-deep)">{{ pro_count }}</strong> worth reading</span>
@@ -1098,6 +1141,33 @@
     <span><span class="tv">{{ traffic.mobile }}</span> mobile</span>
     <span class="sep">/</span>
     <span><span class="tv">{{ traffic.desktop }}</span> desktop</span>
+  </div>
+  <div class="analytics-panel" id="analytics-panel">
+    <div class="an-cell">
+      <div class="an-val" id="an-impressions">—</div>
+      <div class="an-label">Impressions today</div>
+      <div class="an-sub an-revenue" id="an-revenue">—</div>
+    </div>
+    <div class="an-cell">
+      <div class="an-val" id="an-clicks">—</div>
+      <div class="an-label">Story clicks today</div>
+      <div class="an-sub" id="an-top-topic">—</div>
+    </div>
+    <div class="an-cell">
+      <div class="an-val" id="an-now">—</div>
+      <div class="an-label">Readers now</div>
+      <div class="an-sub">active last 10 min</div>
+    </div>
+    <div class="an-cell">
+      <div class="an-val" id="an-sources">—</div>
+      <div class="an-label">Sources live</div>
+      <div class="an-sub" id="an-top-ad">—</div>
+    </div>
+    <div class="an-cell" style="border-right:none">
+      <div class="an-val" id="an-imp-week">—</div>
+      <div class="an-label">Impressions week</div>
+      <div class="an-sub" id="an-est-cpm">est. @ £5 CPM</div>
+    </div>
   </div>
   {% endif %}
 
@@ -1908,6 +1978,80 @@
     });
   }
 
+  /* ───── Intelligence layer ───── */
+
+  // Story click tracking — fires on every story link click
+  (function initClickTracking(){
+    document.querySelectorAll('.story .title a, .feature h2 a, .dispatch-title a, .geo-card .gc-title a').forEach(function(a){
+      a.addEventListener('click', function(){
+        const topic  = (this.closest('[data-topic]') || {}).dataset?.topic || 'General';
+        const source = (this.closest('.story,.feature,.dispatch-item,.geo-card')?.querySelector('.src,.gc-src') || {}).textContent || '';
+        fetch('/api/click',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({url:this.href, topic, source}),keepalive:true}).catch(()=>{});
+      });
+    });
+  })();
+
+  // Analytics polling — admin only, updates every 30 seconds
+  const IS_ADMIN = {{ admin|tojson }};
+  if (IS_ADMIN) {
+    function updateAnalytics(){
+      fetch('/api/analytics').then(r=>r.json()).then(d=>{
+        if (d.error) return;
+        function flash(id, val){
+          const el = document.getElementById(id);
+          if (!el) return;
+          const prev = el.textContent;
+          el.textContent = val;
+          if (prev !== String(val)){ el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1200); }
+        }
+        flash('an-impressions', (d.imp_today||0).toLocaleString());
+        flash('an-imp-week',    (d.imp_week||0).toLocaleString());
+        flash('an-clicks',      (d.clicks_today||0).toLocaleString());
+        flash('an-now',         d.readers_now||0);
+        flash('an-sources',     (d.sources_live||0) + '/' + (d.sources_total||0));
+        const rev = document.getElementById('an-revenue');
+        if (rev) rev.textContent = d.est_revenue_today ? '~£' + d.est_revenue_today + ' today' : '—';
+        const tt = document.getElementById('an-top-topic');
+        if (tt && d.top_topic) tt.textContent = d.top_topic.topic + ' (' + d.top_topic.count + ')';
+        const ta = document.getElementById('an-top-ad');
+        if (ta && d.top_ad) ta.textContent = d.top_ad.name + ' · ' + d.top_ad.count + ' imp';
+        // Animate ProCon score if changed
+        if (d.score !== null && d.score !== undefined){
+          const numEl = document.querySelector('.ratio .num');
+          if (numEl && numEl.textContent !== String(d.score)){
+            numEl.style.transform='scale(1.08)';
+            setTimeout(()=>{ numEl.textContent=d.score; numEl.style.transform='scale(1)'; },400);
+          }
+        }
+      }).catch(()=>{});
+    }
+    updateAnalytics();
+    setInterval(updateAnalytics, 30000);
+  }
+
+  // ProCon score live poll for all readers — animates on change
+  (function scoreWatcher(){
+    let lastScore = parseInt(document.querySelector('.ratio .num')?.textContent, 10) || null;
+    setInterval(function(){
+      fetch('/api/score').then(r=>r.json()).then(d=>{
+        const s = d.score;
+        if (s === null || s === lastScore) return;
+        const el = document.querySelector('.ratio .num');
+        if (!el) return;
+        const start = lastScore || s;
+        lastScore   = s;
+        let n = start;
+        const step = s > start ? 1 : -1;
+        const tick = setInterval(function(){
+          n += step;
+          el.textContent = n;
+          if (n === s) clearInterval(tick);
+        }, Math.abs(s - start) > 5 ? 60 : 120);
+      }).catch(()=>{});
+    }, 60000);
+  })();
+
   /* ───── PWA service worker ───── */
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js', {scope: '/'})
@@ -1937,6 +2081,11 @@
             if (strap){ strap.textContent = a.strapline || ''; }
             if (cta)  { cta.textContent   = a.cta || 'Visit'; cta.style.background = a.accent || '#c9a84c'; cta.style.color = a.bg_color || '#1c1a16'; }
             banner.style.opacity = '1';
+            // Fire impression log
+            if (a.id) fetch('/api/impression',{method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({ad_id:a.id, slot:banner.id.replace('adbanner-','')}),
+              keepalive:true}).catch(()=>{});
           }, 350);
         }, INTERVAL);
       } catch(e){}
