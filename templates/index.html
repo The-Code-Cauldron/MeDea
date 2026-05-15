@@ -349,16 +349,14 @@
   /* aside column (sentiments + sources, etc) */
   .aside-section{margin-top:48px}
   .aside-section:first-of-type{margin-top:0}
-  /* Filtered + Held side by side */
-  .aside-lower{
-    display:grid;grid-template-columns:1fr 1fr;gap:20px;
-    align-items:start;margin-top:24px;
+  /* Filtered + Held — full width below stories grid */
+  .below-stories{
+    display:grid;grid-template-columns:1fr 1fr;gap:32px;
+    align-items:start;margin-top:40px;
   }
-  .aside-lower .filtered-strip,
-  .aside-lower .flagged-strip{margin-top:0}
-  .aside-lower .filtered-strip .story .title{font-size:14.5px}
-  .aside-lower .flagged-strip .story .title{font-size:14px}
-  @media(max-width:1000px){.aside-lower{grid-template-columns:1fr}}
+  .below-stories .filtered-strip,
+  .below-stories .flagged-strip{margin-top:0}
+  @media(max-width:768px){.below-stories{grid-template-columns:1fr}}
 
   /* filtered list — quieter look */
   .filtered-strip{
@@ -1158,73 +1156,75 @@
       </section>
       {% endif %}
 
-      <div class="aside-lower">
-      <div class="filtered-strip">
-        <div class="head">
-          <h3>What we filtered out</h3>
-          <span class="meta">{{ con|length }} of {{ con_count }}</span>
-        </div>
-        <p class="intro">Negative, alarmist, or doom-coded coverage we set aside so it didn't crowd the rest. You can still see what we passed on.</p>
-        <div class="story-list">
-          {% if con %}
-            {% for h in con %}
-            <article class="story is-neg">
-              <div class="num">{{ "%02d"|format(loop.index) }}</div>
-              <div>
-                <a class="title" href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
-                <div class="byline">
-                  <span class="src">{{ h.source }}</span>
-                  <span class="bias">{{ h.bias }}</span>
-                  <span class="sep">·</span>
-                  <span class="score">{{ "%+.2f"|format(h.compound) }}</span>
-                  {% if h.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
-                  {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
-                  {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
-                  {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
-                </div>
-              </div>
-            </article>
-            {% endfor %}
-          {% else %}
-            <p class="empty">A quiet cycle. Nothing flagged as heavy.</p>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="flagged-strip">
-        <div class="head">
-          <h3>Held for your judgement</h3>
-          <span class="meta" style="font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);font-weight:600">{{ flagged|length }} of {{ flagged_count }}</span>
-        </div>
-        <p class="intro">Sentiment unclear or contradictory — positive score, negative context. We didn't force these into the green.</p>
-        <div class="story-list">
-          {% if flagged %}
-            {% for h in flagged %}
-            <article class="story is-flag">
-              <div class="num">{{ "%02d"|format(loop.index) }}</div>
-              <div>
-                <a class="title" href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
-                <div class="byline">
-                  <span class="src">{{ h.source }}</span>
-                  <span class="bias">{{ h.bias }}</span>
-                  <span class="sep">·</span>
-                  <span class="score" style="color:var(--flag)">{{ "%+.2f"|format(h.compound) }}</span>
-                  {% if h.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
-                  {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
-                  {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
-                  {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
-                </div>
-              </div>
-            </article>
-            {% endfor %}
-          {% else %}
-            <p class="empty">Nothing ambiguous this round.</p>
-          {% endif %}
-        </div>
-      </div>
-      </div><!-- aside-lower -->
     </aside>
   </section>
+
+  <!-- ───── Filtered + Held — full width, side by side ───── -->
+  <div class="below-stories">
+    <div class="filtered-strip">
+      <div class="head">
+        <h3>What we filtered out</h3>
+        <span class="meta">{{ con|length }} of {{ con_count }}</span>
+      </div>
+      <p class="intro">Negative, alarmist, or doom-coded coverage we set aside so it didn't crowd the rest.</p>
+      <div class="story-list">
+        {% if con %}
+          {% for h in con %}
+          <article class="story is-neg">
+            <div class="num">{{ "%02d"|format(loop.index) }}</div>
+            <div>
+              <a class="title" href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
+              <div class="byline">
+                <span class="src">{{ h.source }}</span>
+                <span class="bias">{{ h.bias }}</span>
+                <span class="sep">·</span>
+                <span class="score">{{ "%+.2f"|format(h.compound) }}</span>
+                {% if h.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
+                {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
+                {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
+                {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+              </div>
+            </div>
+          </article>
+          {% endfor %}
+        {% else %}
+          <p class="empty">A quiet cycle. Nothing filtered.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flagged-strip">
+      <div class="head">
+        <h3>Held for your judgement</h3>
+        <span class="meta" style="font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);font-weight:600">{{ flagged|length }} of {{ flagged_count }}</span>
+      </div>
+      <p class="intro">Positive score, negative context. We didn't force these into the green.</p>
+      <div class="story-list">
+        {% if flagged %}
+          {% for h in flagged %}
+          <article class="story is-flag">
+            <div class="num">{{ "%02d"|format(loop.index) }}</div>
+            <div>
+              <a class="title" href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
+              <div class="byline">
+                <span class="src">{{ h.source }}</span>
+                <span class="bias">{{ h.bias }}</span>
+                <span class="sep">·</span>
+                <span class="score" style="color:var(--flag)">{{ "%+.2f"|format(h.compound) }}</span>
+                {% if h.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
+                {% if h.framing_risk %}<span class="pill framing">Framing?</span>{% endif %}
+                {% if h.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
+                {% if h.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+              </div>
+            </div>
+          </article>
+          {% endfor %}
+        {% else %}
+          <p class="empty">Nothing ambiguous this round.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 
   {% if admin and unfulfilled_sponsors %}
   <section class="sponsor-log">
