@@ -80,7 +80,11 @@ NEGATIVE_THRESHOLD  = -0.05
 _analyzer = SentimentIntensityAnalyzer()
 
 _SESSION = requests.Session()
-_SESSION.headers.update({'User-Agent': 'MeDea/2.0 (news signal ratio)'})
+_SESSION.headers.update({
+    'User-Agent': (
+        'Mozilla/5.0 (compatible; MeDea/2.0; +https://medea-production-dd4b.up.railway.app)'
+    )
+})
 _SESSION.verify = False
 
 # ── Quality detection ────────────────────────────────────────────────────────
