@@ -1,6 +1,7 @@
 import os
 import re
 import math
+import html as _html
 import logging
 import threading
 import time
@@ -10,8 +11,10 @@ from urllib.parse import urlparse
 import urllib3
 import requests
 import feedparser
+import psycopg2
+import psycopg2.extras
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 log = logging.getLogger('medea')
@@ -22,22 +25,34 @@ app = Flask(__name__)
 
 # (name, url, bias_label)
 FEEDS = [
-    ('BBC News',              'https://feeds.bbci.co.uk/news/rss.xml',                    'Centre'),
-    ('The Guardian',          'https://www.theguardian.com/world/rss',                     'Left'),
-    ('Sky News',              'https://feeds.skynews.com/feeds/rss/home.xml',              'Right'),
-    ('The Independent',       'https://www.independent.co.uk/rss',                         'Centre-Left'),
-    ('Al Jazeera',            'https://www.aljazeera.com/xml/rss/all.xml',                 'Global'),
-    ('UnHerd',                'https://unherd.com/feed/',                                  'Independent'),
-    ('Byline Times',          'https://bylinetimes.com/feed/',                             'Independent'),
-    ('The Conversation UK',   'https://theconversation.com/uk/articles.atom',              'Academic'),
-    ('Positive News',         'https://www.positive.news/feed/',                           'Independent'),
-    ('New Statesman',         'https://www.newstatesman.com/feed/',                        'Centre-Left'),
-    ('Middle East Eye',       'https://www.middleeasteye.net/rss',                         'Global'),
-    ('Declassified UK',       'https://declassifieduk.org/feed/',                          'Investigative'),
-    ('Novara Media',          'https://novaramedia.com/feed/',                             'Left'),
+    ('The Guardian',                    'https://www.theguardian.com/world/rss',                     'Left'),
+    ('Sky News',                        'https://feeds.skynews.com/feeds/rss/home.xml',              'Right'),
+    ('The Independent',                 'https://www.independent.co.uk/rss',                         'Centre-Left'),
+    ('Al Jazeera',                      'https://www.aljazeera.com/xml/rss/all.xml',                 'Global'),
+    ('UnHerd',                          'https://unherd.com/feed/',                                  'Independent'),
+    ('Byline Times',                    'https://bylinetimes.com/feed/',                             'Independent'),
+    ('The Conversation UK',             'https://theconversation.com/uk/articles.atom',              'Academic'),
+    ('Positive News',                   'https://www.positive.news/feed/',                           'Independent'),
+    ('New Statesman',                   'https://www.newstatesman.com/feed/',                        'Centre-Left'),
+    ('Middle East Eye',                 'https://www.middleeasteye.net/rss',                         'Global'),
+    ('Declassified UK',                 'https://declassifieduk.org/feed/',                          'Investigative'),
+    ('Novara Media',                    'https://novaramedia.com/feed/',                             'Left'),
+    ('Bureau of Investigative Journalism', 'https://www.thebureauinvestigates.com/feed',             'Investigative'),
+    ('openDemocracy',                   'https://www.opendemocracy.net/en/rss.xml',                  'Investigative'),
+    ('Bellingcat',                      'https://www.bellingcat.com/feed/',                          'Investigative'),
+    ('The Canary',                      'https://thecanary.co/feed/',                               'Investigative'),
 ]
 
-PRO_SOURCE_CAP = 3
+PRO_SOURCE_CAP      = 3
+INVESTIGATIVE_CAP   = 5
+
+INVESTIGATIVE_SOURCES = frozenset({
+    'Declassified UK',
+    'Bureau of Investigative Journalism',
+    'openDemocracy',
+    'Bellingcat',
+    'The Canary',
+})
 
 REFRESH_INTERVAL    = 3600
 POSITIVE_THRESHOLD  =  0.05
@@ -78,7 +93,20 @@ _NEGATIVE_CONTEXT = frozenset({
     'rape', 'assault', 'abuse', 'missing', 'arrested', 'charged', 'sentenced',
     'jailed', 'prison', 'hostage', 'kidnap', 'explosion', 'fire', 'flood',
     'drought', 'famine', 'poverty', 'homeless', 'evicted', 'redundan',
+    'unpaid', 'underpaid', 'scam', 'lawsuit', 'sued', 'suing',
+    'closure', 'layoff', 'layoffs', 'hack', 'hacked', 'breach', 'breached',
+    'contaminated', 'contamination', 'toxic', 'recall', 'fined', 'cover-up',
+    'misconduct', 'coverup', 'exploitation', 'exploited', 'defrauded',
+    'bankrupt', 'insolvent', 'receivership', 'liquidation', 'repossessed',
 })
+
+_FORCE_NEGATIVE_RE = re.compile(
+    r'\b(?:unpaid|underpaid|convicted|sentenced|indicted|prosecuted|'
+    r'bankrupt|insolvent|receivership|liquidat|'
+    r'misconduct|defrauded|scammed|exploited|exploitation|'
+    r'repossessed|foreclosed|overcharged|embezzl)\b',
+    re.IGNORECASE,
+)
 
 _PRESS_RELEASE_RE = re.compile(
     r'\b(announces?|appoints?|showcases?|unveils?|rebrands?|'
@@ -162,6 +190,87 @@ _state = {
     'total': 0,
     'ready': False,
 }
+
+# ── Database ──────────────────────────────────────────────────────────────────
+
+_DB_URL = os.environ.get('DATABASE_URL', '')
+
+
+def _db_conn():
+    return psycopg2.connect(_DB_URL)
+
+
+def _init_db():
+    if not _DB_URL:
+        log.warning('DATABASE_URL not set — Dispatch feature disabled')
+        return
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS dispatches (
+                        id           SERIAL PRIMARY KEY,
+                        url          TEXT    NOT NULL,
+                        title        TEXT    NOT NULL,
+                        source       TEXT,
+                        compound     REAL,
+                        label        TEXT,
+                        sarcasm_risk BOOLEAN DEFAULT FALSE,
+                        opinion      BOOLEAN DEFAULT FALSE,
+                        clickbait    BOOLEAN DEFAULT FALSE,
+                        submitted_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+            conn.commit()
+        log.info('Dispatch DB ready')
+    except Exception as exc:
+        log.error(f'_init_db failed: {exc}')
+
+
+def _db_insert(sub):
+    with _db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO dispatches
+                    (url, title, source, compound, label, sarcasm_risk, opinion, clickbait)
+                VALUES
+                    (%(url)s, %(title)s, %(source)s, %(compound)s, %(label)s,
+                     %(sarcasm_risk)s, %(opinion)s, %(clickbait)s)
+                RETURNING submitted_at
+            """, sub)
+            row = cur.fetchone()
+        conn.commit()
+    return row[0]
+
+
+def _db_fetch(limit=8):
+    try:
+        with _db_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    'SELECT * FROM dispatches ORDER BY submitted_at DESC LIMIT %s',
+                    (limit,)
+                )
+                rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if hasattr(d.get('submitted_at'), 'strftime'):
+                d['submitted_at'] = d['submitted_at'].strftime('%d %b %Y %H:%M UTC')
+            result.append(d)
+        return result
+    except Exception as exc:
+        log.error(f'_db_fetch failed: {exc}')
+        return []
+
+
+def _db_clear():
+    with _db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('DELETE FROM dispatches')
+        conn.commit()
+
+
 _lock = threading.Lock()
 
 _progress = {'status': 'idle', 'feeds': {}}
@@ -222,6 +331,8 @@ def _fetch_one(name, url, bias, results):
             link = (entry.get('link') or '').strip()
             vs = _analyzer.polarity_scores(title)
             compound = round(vs['compound'], 3)
+            if _FORCE_NEGATIVE_RE.search(title):
+                compound = min(compound, NEGATIVE_THRESHOLD - 0.01)
             flags = _quality_flags(title, link, compound)
 
             if flags['satire'] or flags['press_release'] or flags['junk']:
@@ -279,7 +390,8 @@ def _fetch():
     sources = {}
     for name, _, bias in FEEDS:
         r = results.get(name, {'pro': [], 'con': [], 'flagged': [], 'error': True, 'bias': bias})
-        capped = sorted(r['pro'], key=lambda x: x['compound'], reverse=True)[:PRO_SOURCE_CAP]
+        cap = INVESTIGATIVE_CAP if name in INVESTIGATIVE_SOURCES else PRO_SOURCE_CAP
+        capped = sorted(r['pro'], key=lambda x: x['compound'], reverse=True)[:cap]
         all_pro.extend(capped)
         all_con.extend(r['con'])
         all_flagged.extend(r['flagged'])
@@ -318,9 +430,54 @@ def _fetch():
 
 
 def _loop():
+    _init_db()
     while True:
         _fetch()
         time.sleep(REFRESH_INTERVAL)
+
+
+# ── Dispatch (manual submission) ─────────────────────────────────────────────
+
+_DISPATCH_UA = (
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+)
+_OG_TITLE_RE = re.compile(
+    r'<meta\b[^>]*\bproperty=["\']og:title["\'][^>]*\bcontent=["\']([^"\'<>]{5,250})["\']'
+    r'|<meta\b[^>]*\bcontent=["\']([^"\'<>]{5,250})["\'][^>]*\bproperty=["\']og:title["\']',
+    re.IGNORECASE,
+)
+_TW_TITLE_RE = re.compile(
+    r'<meta\b[^>]*\bname=["\']twitter:title["\'][^>]*\bcontent=["\']([^"\'<>]{5,250})["\']'
+    r'|<meta\b[^>]*\bcontent=["\']([^"\'<>]{5,250})["\'][^>]*\bname=["\']twitter:title["\']',
+    re.IGNORECASE,
+)
+_PAGE_TITLE_RE = re.compile(r'<title[^>]*>(.*?)</title>', re.IGNORECASE | re.DOTALL)
+_TITLE_SUFFIX_RE = re.compile(r'\s*[\|\-–—]\s*[^|\-–—]{3,60}$')
+
+
+def _extract_title(url):
+    try:
+        resp = requests.get(url, timeout=12, verify=False, allow_redirects=True,
+                            headers={'User-Agent': _DISPATCH_UA})
+        if resp.status_code >= 400:
+            return None
+        text = resp.text
+        m = _OG_TITLE_RE.search(text)
+        if m:
+            return _html.unescape((m.group(1) or m.group(2)).strip())
+        m = _TW_TITLE_RE.search(text)
+        if m:
+            return _html.unescape((m.group(1) or m.group(2)).strip())
+        m = _PAGE_TITLE_RE.search(text)
+        if m:
+            title = _html.unescape(m.group(1).strip())
+            title = _TITLE_SUFFIX_RE.sub('', title).strip()
+            if len(title) >= 10:
+                return title
+    except Exception as exc:
+        log.warning(f'_extract_title failed: {exc}')
+    return None
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -333,10 +490,99 @@ def index():
         d['con']     = list(_state['con'])
         d['flagged'] = list(_state['flagged'])
         d['sources'] = dict(_state['sources'])
-    d['score_class'] = _score_class(d['score'])
+    d['score_class']   = _score_class(d['score'])
     d['arc_path'], d['nx'], d['ny'] = _dial_arc(d['score'])
-    d['description'] = _filter_description(d['score'], d['pro_count'], d['con_count'])
+    d['description']   = _filter_description(d['score'], d['pro_count'], d['con_count'])
+    d['dispatches']    = _db_fetch() if _DB_URL else []
+    d['dispatch_live'] = bool(_DB_URL)
+    admin_token        = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
+    d['admin']         = bool(admin_token and request.args.get('edit') == admin_token)
+    d['admin_token']   = admin_token if d['admin'] else ''
     return render_template('index.html', **d)
+
+
+@app.route('/api/dispatch')
+def api_dispatch():
+    return jsonify(_db_fetch() if _DB_URL else [])
+
+
+def _admin_check(data):
+    admin = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
+    return bool(admin and (data or {}).get('token') == admin)
+
+
+@app.route('/api/submit', methods=['POST'])
+def api_submit():
+    if not _DB_URL:
+        return jsonify({'error': 'Dispatch not configured'}), 503
+    data = request.get_json(silent=True) or {}
+    if not _admin_check(data):
+        return jsonify({'error': 'Not authorised'}), 403
+    url = data.get('url', '').strip()
+    if not url:
+        return jsonify({'error': 'No URL provided'}), 400
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+    title = _extract_title(url)
+    if not title:
+        return jsonify({'error': 'Could not read a headline from that URL'}), 422
+    vs       = _analyzer.polarity_scores(title)
+    compound = round(vs['compound'], 3)
+    if _FORCE_NEGATIVE_RE.search(title):
+        compound = min(compound, NEGATIVE_THRESHOLD - 0.01)
+    flags = _quality_flags(title, url, compound)
+    label = _classify(compound)
+    try:
+        domain = urlparse(url).netloc.lower().lstrip('www.')
+    except Exception:
+        domain = url
+    sub = {
+        'url':          url,
+        'title':        title,
+        'source':       domain,
+        'compound':     compound,
+        'label':        label,
+        'sarcasm_risk': flags['sarcasm_risk'],
+        'opinion':      flags['opinion'],
+        'clickbait':    flags['clickbait'],
+    }
+    try:
+        ts = _db_insert(sub)
+        sub['submitted_at'] = ts.strftime('%d %b %Y %H:%M UTC') if hasattr(ts, 'strftime') else str(ts)
+    except Exception as exc:
+        log.error(f'Dispatch insert failed: {exc}')
+        return jsonify({'error': 'Could not save — try again'}), 500
+    return jsonify(sub)
+
+
+@app.route('/api/dispatch/<int:item_id>', methods=['DELETE'])
+def api_dispatch_delete(item_id):
+    token = request.headers.get('X-Admin-Token', '')
+    admin = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
+    if not admin or token != admin:
+        return jsonify({'error': 'Not authorised'}), 403
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute('DELETE FROM dispatches WHERE id = %s', (item_id,))
+            conn.commit()
+    except Exception as exc:
+        log.error(f'Dispatch delete failed: {exc}')
+        return jsonify({'error': 'Database error'}), 500
+    return jsonify({'status': 'deleted'})
+
+
+@app.route('/api/submit/clear', methods=['POST'])
+def api_submit_clear():
+    data = request.get_json(silent=True) or {}
+    if not _admin_check(data):
+        return jsonify({'error': 'Not authorised'}), 403
+    try:
+        _db_clear()
+    except Exception as exc:
+        log.error(f'Dispatch clear failed: {exc}')
+        return jsonify({'error': 'Database error'}), 500
+    return jsonify({'status': 'cleared'})
 
 
 @app.route('/api/score')

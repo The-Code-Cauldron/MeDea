@@ -470,6 +470,96 @@
     color:var(--ink-3);font-weight:600;
   }
 
+  /* ───── The Dispatch ───── */
+  .dispatch-section{
+    margin-top:48px;padding-top:28px;border-top:1px solid var(--ink);
+  }
+  .dispatch-card{
+    margin-top:20px;background:var(--card);border:1px solid var(--rule);
+  }
+  .dispatch-input-row{
+    display:flex;border-bottom:1px solid var(--rule);
+  }
+  .dispatch-url{
+    flex:1;background:transparent;border:none;
+    font-family:var(--mono);font-size:13px;color:var(--ink);
+    padding:14px 18px;outline:none;min-width:0;
+  }
+  .dispatch-url::placeholder{color:var(--ink-4);letter-spacing:.03em}
+  .dispatch-url:focus{background:var(--paper-2)}
+  .dispatch-btn{
+    appearance:none;background:var(--ink);border:none;border-left:1px solid var(--rule);
+    color:var(--paper);font-family:var(--sans);font-size:10.5px;letter-spacing:.22em;
+    text-transform:uppercase;font-weight:700;padding:14px 24px;cursor:pointer;
+    white-space:nowrap;transition:background .15s;flex-shrink:0;
+  }
+  .dispatch-btn:hover{background:var(--pos-deep)}
+  .dispatch-btn:disabled{opacity:.5;cursor:not-allowed}
+  .dispatch-admin{
+    appearance:none;background:transparent;border:none;border-left:1px solid var(--rule);
+    color:var(--ink-4);font-family:var(--sans);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;font-weight:600;padding:14px 16px;cursor:pointer;
+    white-space:nowrap;transition:color .15s;flex-shrink:0;
+  }
+  .dispatch-admin:hover{color:var(--neg)}
+  .dispatch-feed{padding:0 28px}
+  .dispatch-empty{
+    display:flex;align-items:center;gap:12px;padding:28px 0;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-4);animation:wire-idle 3.5s ease-in-out infinite;
+  }
+  @keyframes wire-idle{0%,100%{opacity:.3}50%{opacity:.85}}
+  .dispatch-cursor{
+    display:inline-block;width:8px;height:15px;background:var(--pos);flex-shrink:0;
+    animation:blink .9s step-end infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+  .dispatch-item{
+    display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:start;
+    padding:18px 0;border-bottom:1px solid var(--rule);
+  }
+  .dispatch-item:last-child{border-bottom:none}
+  .dispatch-item-body{min-width:0}
+  .dispatch-del{
+    appearance:none;background:transparent;border:none;cursor:pointer;
+    color:var(--ink-4);font-size:13px;padding:4px 6px;line-height:1;
+    transition:color .15s;flex-shrink:0;margin-top:2px;
+  }
+  .dispatch-del:hover{color:var(--neg)}
+  .dispatch-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;
+    font-weight:700;padding:3px 9px;white-space:nowrap;margin-top:4px;
+  }
+  .dispatch-badge-pro    {background:var(--pos-paper);color:var(--pos-deep)}
+  .dispatch-badge-con    {background:var(--neg-soft);color:var(--neg)}
+  .dispatch-badge-flagged{background:var(--flag-soft);color:var(--flag)}
+  .dispatch-badge .dscore{font-family:var(--mono);letter-spacing:.04em;font-size:10px;opacity:.75}
+  .dispatch-title{
+    font-family:var(--serif);font-weight:500;font-size:20px;line-height:1.25;
+    letter-spacing:-.005em;color:var(--ink);text-wrap:pretty;
+    font-variation-settings:"opsz" 22;
+  }
+  .dispatch-title a:hover{color:var(--pos-deep)}
+  .dispatch-title.is-con a:hover{color:var(--neg)}
+  .dispatch-title.is-flagged a:hover{color:var(--flag)}
+  .dispatch-meta{
+    margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+    font-family:var(--sans);font-size:11px;color:var(--ink-3);letter-spacing:.02em;
+  }
+  .dispatch-meta .src{
+    color:var(--ink-2);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:10px;
+  }
+  .dispatch-meta .ts{color:var(--ink-4);font-family:var(--mono);font-size:10.5px}
+  .dispatch-err{
+    padding:16px 0;font-family:var(--mono);font-size:11.5px;
+    letter-spacing:.14em;color:var(--neg);
+  }
+  .dispatch-new{
+    animation:flash-in .6s ease forwards;
+  }
+  @keyframes flash-in{from{background:var(--pos-paper)}to{background:transparent}}
+
   /* responsive */
   @media (max-width: 1000px){
     .lede{grid-template-columns:1fr;gap:18px;align-items:start}
@@ -685,6 +775,64 @@
     </aside>
   </section>
 
+  <!-- ───── The Dispatch ───── -->
+  <section class="dispatch-section">
+    <div class="section-head">
+      <h2 class="ttl">The <em>Dispatch</em></h2>
+      <span class="meta" id="dispatch-meta">
+        {% if not dispatch_live %}Offline — DATABASE_URL not set
+        {% elif admin %}{{ dispatches|length }} filed &middot; editing
+        {% else %}{{ dispatches|length }} filed &middot; curated
+        {% endif %}
+      </span>
+    </div>
+    <div class="dispatch-card">
+
+      {% if admin %}
+      <div class="dispatch-input-row">
+        <input type="url" class="dispatch-url" id="dispatch-url"
+          placeholder="Paste an article URL to file it"
+          autocomplete="off" spellcheck="false"/>
+        <button class="dispatch-btn" id="dispatch-btn" type="button">File it</button>
+        <button class="dispatch-admin" id="dispatch-admin-clear" type="button" title="Clear all">Clear all</button>
+      </div>
+      {% endif %}
+
+      <div class="dispatch-feed" id="dispatch-feed">
+        {% if dispatches %}
+          {% for d in dispatches %}
+          <div class="dispatch-item" data-id="{{ d.id }}">
+            <div class="dispatch-badge dispatch-badge-{{ d.label }}">
+              {{ 'Pro' if d.label == 'pro' else 'Con' if d.label == 'con' else 'Held' }}
+              <span class="dscore">{{ '%+.2f'|format(d.compound) }}</span>
+            </div>
+            <div class="dispatch-item-body">
+              <div class="dispatch-title is-{{ d.label }}">
+                <a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.title }}</a>
+              </div>
+              <div class="dispatch-meta">
+                <span class="src">{{ d.source }}</span>
+                <span style="color:var(--ink-4)">&#183;</span>
+                <span class="ts">{{ d.submitted_at }}</span>
+                {% if d.sarcasm_risk %}<span class="pill sarcasm">Sarcasm?</span>{% endif %}
+                {% if d.opinion %}<span class="pill opinion">Opinion</span>{% endif %}
+                {% if d.clickbait %}<span class="pill clickbait">Clickbait</span>{% endif %}
+              </div>
+            </div>
+            {% if admin %}
+            <button class="dispatch-del" onclick="deleteDispatch({{ d.id }})" title="Remove">&#x2715;</button>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="dispatch-empty">
+            <span class="dispatch-cursor"></span>{% if admin %}Wire ready. Paste a URL above.{% else %}Nothing filed yet.{% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
   <!-- ───── Sources ───── -->
   <section class="sources">
     <div class="section-head">
@@ -851,6 +999,132 @@
       }
     }).catch(()=>setTimeout(tick, 2000));
   })();
+
+  /* ───── The Dispatch ───── */
+  const DISPATCH_ADMIN = {{ admin|tojson }};
+  const DISPATCH_TOKEN = {{ admin_token|tojson }};
+
+  function escHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function dispatchItemHtml(d, flash){
+    const lc    = d.label==='pro'?'pro':d.label==='con'?'con':'flagged';
+    const lt    = d.label==='pro'?'Pro':d.label==='con'?'Con':'Held';
+    const score = (d.compound>=0?'+':'') + parseFloat(d.compound).toFixed(2);
+    const pills = [
+      d.sarcasm_risk?'<span class="pill sarcasm">Sarcasm?</span>':'',
+      d.opinion     ?'<span class="pill opinion">Opinion</span>':'',
+      d.clickbait   ?'<span class="pill clickbait">Clickbait</span>':'',
+    ].join('');
+    const del = DISPATCH_ADMIN
+      ? `<button class="dispatch-del" onclick="deleteDispatch(${d.id})" title="Remove">&#x2715;</button>`
+      : '';
+    return `<div class="dispatch-item${flash?' dispatch-new':''}" data-id="${d.id}">
+      <div class="dispatch-badge dispatch-badge-${lc}">
+        ${lt} <span class="dscore">${score}</span>
+      </div>
+      <div class="dispatch-item-body">
+        <div class="dispatch-title is-${lc}">
+          <a href="${escHtml(d.url)}" target="_blank" rel="noopener">${escHtml(d.title)}</a>
+        </div>
+        <div class="dispatch-meta">
+          <span class="src">${escHtml(d.source)}</span>
+          <span style="color:var(--ink-4)">·</span>
+          <span class="ts">${escHtml(d.submitted_at||'just now')}</span>
+          ${pills}
+        </div>
+      </div>
+      ${del}
+    </div>`;
+  }
+
+  (function initDispatch(){
+    const btn = document.getElementById('dispatch-btn');
+    const clr = document.getElementById('dispatch-admin-clear');
+    const inp = document.getElementById('dispatch-url');
+    if (btn) btn.addEventListener('click', fileDispatch);
+    if (clr) clr.addEventListener('click', adminClear);
+    if (inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') fileDispatch(); });
+    setInterval(pollDispatch, 30000);
+  })();
+
+  let _lastDispatchId = (function(){
+    const first = document.querySelector('.dispatch-item');
+    return first ? parseInt(first.dataset.id||'0',10) : null;
+  })();
+
+  function pollDispatch(){
+    fetch('/api/dispatch').then(r=>r.json()).then(rows=>{
+      if (!rows.length) return;
+      const top = rows[0].id;
+      if (_lastDispatchId === null){ _lastDispatchId = top; return; }
+      if (top !== _lastDispatchId){ _lastDispatchId = top; renderFeed(rows, true); updateMeta(rows.length); }
+    }).catch(()=>{});
+  }
+
+  function renderFeed(rows, flash){
+    const feed = document.getElementById('dispatch-feed');
+    if (!feed) return;
+    const empty = DISPATCH_ADMIN ? 'Wire ready. Paste a URL above.' : 'Nothing filed yet.';
+    feed.innerHTML = rows.length
+      ? rows.map((d,i)=>dispatchItemHtml(d,flash&&i===0)).join('')
+      : `<div class="dispatch-empty"><span class="dispatch-cursor"></span>${empty}</div>`;
+  }
+
+  function updateMeta(count){
+    const meta = document.getElementById('dispatch-meta');
+    if (!meta) return;
+    meta.textContent = count + ' filed · ' + (DISPATCH_ADMIN ? 'editing' : 'curated');
+  }
+
+  function fileDispatch(){
+    const inp = document.getElementById('dispatch-url');
+    const btn = document.getElementById('dispatch-btn');
+    let url = (inp.value||'').trim();
+    if (!url) return;
+    if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+    btn.disabled = true; btn.textContent = 'Filing…';
+    fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url, token:DISPATCH_TOKEN})})
+    .then(r=>r.json())
+    .then(data=>{
+      btn.disabled=false; btn.textContent='File it';
+      if (data.error){
+        const feed=document.getElementById('dispatch-feed');
+        const e=document.createElement('div'); e.className='dispatch-err'; e.textContent=data.error;
+        feed.prepend(e); setTimeout(()=>e.remove(),4000);
+        return;
+      }
+      inp.value='';
+      fetch('/api/dispatch').then(r=>r.json()).then(rows=>{
+        _lastDispatchId=rows.length?rows[0].id:null;
+        renderFeed(rows,true); updateMeta(rows.length);
+      });
+    })
+    .catch(()=>{ btn.disabled=false; btn.textContent='File it'; });
+  }
+
+  function deleteDispatch(id){
+    fetch('/api/dispatch/'+id,{method:'DELETE',headers:{'X-Admin-Token':DISPATCH_TOKEN}})
+    .then(r=>r.json()).then(data=>{
+      if (data.error) return;
+      fetch('/api/dispatch').then(r=>r.json()).then(rows=>{
+        _lastDispatchId=rows.length?rows[0].id:null;
+        renderFeed(rows,false); updateMeta(rows.length);
+      });
+    });
+  }
+
+  function adminClear(){
+    if (!confirm('Clear all dispatches?')) return;
+    fetch('/api/submit/clear',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({token:DISPATCH_TOKEN})})
+    .then(r=>r.json()).then(data=>{
+      if (data.error){ alert(data.error); return; }
+      renderFeed([],false); updateMeta(0); _lastDispatchId=null;
+    });
+  }
 </script>
 
 </body>
