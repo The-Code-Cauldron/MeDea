@@ -928,9 +928,9 @@ def _fetch():
     with _lock:
         _state.update({
             'score':         score,
-            'pro':           all_pro[:20],
-            'con':           all_con[:14],
-            'flagged':       all_flagged[:10],
+            'pro':           all_pro[:50],
+            'con':           all_con[:40],
+            'flagged':       all_flagged[:20],
             'sources':       sources,
             'last_updated':  datetime.now(timezone.utc).strftime('%d %b %Y %H:%M UTC'),
             'pro_count':     len(all_pro),
