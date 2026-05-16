@@ -716,8 +716,21 @@
   }
 
   /* ───── Visitor counter ───── */
-  .visitor-counter{
-    margin-top:48px;text-align:center;
+  .counter-wrap{
+    display:flex;align-items:center;justify-content:center;
+    gap:48px;flex-wrap:wrap;margin-top:48px;
+  }
+  .visitor-counter{text-align:center}
+  .week-score{text-align:center}
+  .ws-num{
+    font-family:var(--mono);font-size:40px;font-weight:500;
+    color:var(--flag);line-height:.9;letter-spacing:-.04em;
+    font-variant-numeric:tabular-nums;
+  }
+  [data-theme="dark"] .ws-num{color:#d9b25f}
+  .ws-trend{
+    font-family:var(--sans);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+    font-weight:600;margin-top:6px;
   }
   .counter-digits{
     display:inline-flex;gap:4px;
@@ -1985,13 +1998,20 @@
 
   {{ ad_slot(ad_bottom, 'bottom', ad_bottom_list) }}
 
-  <!-- ───── Visitor counter ───── -->
-  <div class="visitor-counter">
-    <div class="counter-digits">
-      {% set n = "%06d"|format(total_visitors) %}
-      {% for d in n %}<span class="digit">{{ d }}</span>{% endfor %}
+  <!-- ───── Visitor counter + week score ───── -->
+  <div class="counter-wrap">
+    <div class="visitor-counter">
+      <div class="counter-digits">
+        {% set n = "%06d"|format(total_visitors) %}
+        {% for d in n %}<span class="digit">{{ d }}</span>{% endfor %}
+      </div>
+      <div class="counter-label">Readers reached</div>
     </div>
-    <div class="counter-label">Readers reached</div>
+    <div class="week-score" id="week-score" style="display:none">
+      <div class="ws-num" id="wk-avg-val">—</div>
+      <div class="counter-label">7-day avg score</div>
+      <div class="ws-trend" id="wk-trend"></div>
+    </div>
   </div>
 
   <footer class="colophon">
@@ -2593,6 +2613,20 @@
       }
       if (loading) loading.style.display='none';
       if (content) content.style.display='block';
+      // Bottom counter — 7-day avg score
+      var wkAvg   = document.getElementById('wk-avg-val');
+      var wkTrend = document.getElementById('wk-trend');
+      var wkWrap  = document.getElementById('week-score');
+      if (wkAvg) {
+        wkAvg.textContent = avg;
+        wkAvg.style.color = avg >= 60 ? 'var(--pos-deep)' : avg >= 40 ? 'var(--flag)' : 'var(--neg)';
+      }
+      if (wkTrend && today && avg) {
+        var diff = today - avg;
+        wkTrend.textContent = diff > 4 ? '↑ Above avg this week' : diff < -4 ? '↓ Below avg this week' : '→ Around avg this week';
+        wkTrend.style.color = diff > 4 ? 'var(--pos-deep)' : diff < -4 ? 'var(--neg)' : 'var(--flag)';
+      }
+      if (wkWrap) wkWrap.style.display = 'block';
     }).catch(function(){ var l=document.getElementById('ctx-loading'); if(l) l.style.display='none'; });
   })();
 
