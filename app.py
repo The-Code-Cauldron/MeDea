@@ -1134,7 +1134,7 @@ _SELF_PROMOS = {
     'mid': {
         'advertiser': 'YCG',
         'url':        'https://yourcommsgroup.com',
-        'headline':   'YCG',
+        'headline':   'Your Comms Group',
         'strapline':  'Business telecoms. SIMs, VoIP, leased lines, IoT, MDM. One partner. No complexity.',
         'cta':        'Talk to us →',
         'bg_color':   '#111111',
