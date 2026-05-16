@@ -162,7 +162,12 @@ _FORCE_NEGATIVE_RE = re.compile(
     r'ethnic cleansing|war crime|civilian.{0,20}kill|'
     r'kill[s]?\s+\d|killed\s+\d|killing\s+\d|'
     r'children\s+killed|civilians\s+killed|people\s+killed)\b'
-    r'|jim crow|voter suppression|voting rights',
+    r'|jim crow|voter suppression|voting rights'
+    # Price increases — VADER misreads "boosted/surged/hiked/spiked" as positive
+    r'|boost(?:ed|s|ing)?\s+(?:price[sd]?|cost[s]?|rate[s]?|tariff[s]?|bill[s]?|charge[s]?|fee[s]?|inflation)'
+    r'|(?:price[sd]?|cost[s]?|rate[s]?|bill[s]?)\s+(?:hike[sd]?|spike[sd]?|surge[sd]?|soar(?:ed|ing)?|skyrocket)'
+    r'|energy\s+price[sd]?|electricity\s+price[sd]?|gas\s+price[sd]?'
+    r'|price[sd]?\s+\d+\s*(?:per\s+cent|percent|%)',
     re.IGNORECASE,
 )
 
