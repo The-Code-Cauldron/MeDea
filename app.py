@@ -1011,8 +1011,8 @@ _SELF_PROMOS = {
         'headline':   'YCG',
         'strapline':  'Business telecoms. SIMs, VoIP, leased lines, IoT, MDM. One partner. No complexity.',
         'cta':        'Talk to us →',
-        'bg_color':   '#0a1628',
-        'accent':     '#1a7fe8',
+        'bg_color':   '#111111',
+        'accent':     '#CC0201',
         'self_promo': True,
     },
     'bottom': {
