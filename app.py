@@ -1259,7 +1259,29 @@ def _get_traffic():
         return None
 
 
+# ── Admin IP allowlist ───────────────────────────────────────────────────────
+# Set ADMIN_ALLOWED_IPS=x.x.x.x,y.y.y.y in Railway env vars.
+# If unset → no IP restriction (open). Add IPs before going public.
+
+_ADMIN_ALLOWED_IPS = frozenset(
+    ip.strip() for ip in os.environ.get('ADMIN_ALLOWED_IPS', '').split(',')
+    if ip.strip()
+)
+
+
+def _request_ip():
+    return request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+
+
+def _ip_is_admin():
+    if not _ADMIN_ALLOWED_IPS:
+        return True  # no allowlist configured — don't lock out on deploy
+    return _request_ip() in _ADMIN_ALLOWED_IPS
+
+
 def _admin_check(data=None):
+    if not _ip_is_admin():
+        return False
     if session.get('admin'):
         return True
     if data:
@@ -1269,6 +1291,8 @@ def _admin_check(data=None):
 
 
 def _auth_error():
+    if not _ip_is_admin():
+        return jsonify({'error': 'Not found'}), 404  # reveal nothing to unknown IPs
     return jsonify({'error': 'Session expired — please log in again', 'redirect': '/login'}), 403
 
 
@@ -1681,11 +1705,13 @@ def api_ad_clear():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if not _ip_is_admin():
+        return '', 404  # login page invisible to non-allowlisted IPs
     if session.get('admin'):
         return redirect(url_for('index'))
     error = False
     if request.method == 'POST':
-        ip    = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+        ip    = _request_ip()
         token = request.form.get('token', '').strip()
         admin = os.environ.get('DISPATCH_ADMIN_TOKEN', '')
         if not _login_rate_ok(ip):
