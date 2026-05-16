@@ -64,9 +64,29 @@ FEEDS = [
     ('The Register',        'https://www.theregister.com/headlines.atom',           'Technology',    'https://www.theregister.com'),
     ('Carbon Brief',        'https://www.carbonbrief.org/feed/',                    'Environment',   'https://www.carbonbrief.org'),
     ('Al-Monitor',          'https://www.al-monitor.com/rss',                       'Middle East',   'https://www.al-monitor.com'),
-    # Finance — market intelligence, insider trades, congressional activity
-    ('Seeking Alpha',       'https://seekingalpha.com/market_currents.xml',          'Finance',       'https://seekingalpha.com'),
-    ('WSJ Markets',         'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',         'Finance',       'https://www.wsj.com/news/markets'),
+    # Finance — market intelligence, insider trades, economics
+    ('Seeking Alpha',         'https://seekingalpha.com/market_currents.xml',          'Finance',          'https://seekingalpha.com'),
+    ('WSJ Markets',           'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',         'Finance',          'https://www.wsj.com/news/markets'),
+    ('Project Syndicate',     'https://www.project-syndicate.org/rss',                 'Global Economics', 'https://www.project-syndicate.org'),
+    ('VoxEU',                 'https://cepr.org/voxeu/rss.xml',                        'Economics',        'https://cepr.org/voxeu'),
+    ('Quartz',                'https://qz.com/feed',                                   'Global Business',  'https://qz.com'),
+    # Geopolitics & foreign affairs
+    ('Foreign Policy',        'https://foreignpolicy.com/feed/',                       'Geopolitics',      'https://foreignpolicy.com'),
+    ('The Diplomat',          'https://thediplomat.com/feed/',                         'Asia · Geo',       'https://thediplomat.com'),
+    ('War on the Rocks',      'https://warontherocks.com/feed/',                       'Defence · Analysis','https://warontherocks.com'),
+    ('Chatham House',         'https://www.chathamhouse.org/rss',                      'Policy · Analysis','https://www.chathamhouse.org'),
+    ('Responsible Statecraft','https://responsiblestatecraft.org/feed/',               'Foreign Policy',   'https://responsiblestatecraft.org'),
+    ('Semafor',               'https://www.semafor.com/feed',                          'Global',           'https://www.semafor.com'),
+    # AI & Technology
+    ('MIT Tech Review',       'https://www.technologyreview.com/feed/',                'Technology',       'https://www.technologyreview.com'),
+    ('Ars Technica',          'https://feeds.arstechnica.com/arstechnica/index',       'Technology',       'https://arstechnica.com'),
+    ('VentureBeat',           'https://venturebeat.com/category/ai/feed/',             'Technology',       'https://venturebeat.com'),
+    ('Wired',                 'https://www.wired.com/feed/rss',                        'Technology',       'https://www.wired.com'),
+    ('The Verge',             'https://www.theverge.com/rss/index.xml',                'Technology',       'https://www.theverge.com'),
+    ('TechCrunch',            'https://techcrunch.com/feed/',                          'Technology',       'https://techcrunch.com'),
+    # Global Tech — technology outside the Western bubble
+    ('Rest of World',         'https://restofworld.org/feed/',                         'Global Tech',      'https://restofworld.org'),
+    ('IEEE Spectrum',         'https://spectrum.ieee.org/feeds/feed.rss',              'Technology',       'https://spectrum.ieee.org'),
 ]
 
 PRO_SOURCE_CAP      = 4
@@ -80,6 +100,13 @@ INVESTIGATIVE_SOURCES = frozenset({
     'ProPublica',
     'The Intercept',
     'Carbon Brief',
+    # Deep analysis — elevated cap
+    'Foreign Policy',
+    'War on the Rocks',
+    'Chatham House',
+    'MIT Tech Review',
+    'Project Syndicate',
+    'Rest of World',
 })
 
 REFRESH_INTERVAL    =  900
@@ -205,10 +232,16 @@ _TOPIC_RULES = [
         r'\b(?:climate|carbon|emission|flood|wildfire|energy|fossil|renewable|solar|wind|'
         r'green|biodiversity|extinction|deforest|pollution|net zero|plastic|ocean|species|'
         r'drought|storm|heatwave|glacier|coal|gas|nuclear|sustainability)\b', re.I)),
+    ('AI',            re.compile(
+        r'\b(?:artificial intelligence|machine learning|deep learning|neural network|'
+        r'large language model|\bllm\b|generative ai|gpt-[0-9]|chatgpt|openai|anthropic|'
+        r'claude|gemini|copilot|ai model|foundation model|ai regulation|ai safety|'
+        r'ai governance|ai agent|agentic|autonomous ai|deepmind|mistral|'
+        r'nvidia|gpu cluster|inference|model training|fine.?tun)\b', re.I)),
     ('Technology',    re.compile(
-        r'\b(?:artificial intelligence|\bai\b|algorithm|data breach|cybersecurity|hack|'
+        r'\b(?:\bai\b|algorithm|data breach|cybersecurity|hack|'
         r'social media|surveillance|tech|digital|robot|automation|software|silicon|'
-        r'smartphone|app|internet|cloud|quantum|chip|semiconductor|deepfake|openai|'
+        r'smartphone|app|internet|cloud|quantum|chip|semiconductor|deepfake|'
         r'google|microsoft|apple|meta|amazon|elon|musk|twitter|x\.com)\b', re.I)),
     ('Education',     re.compile(
         r'\b(?:school|university|college|student|teacher|ofsted|exam|curriculum|degree|'
@@ -1044,7 +1077,7 @@ _SELF_PROMOS = {
         'advertiser': 'MeDea',
         'url':        'https://medea-production-dd4b.up.railway.app',
         'headline':   'MeDea',
-        'strapline':  'Signal over noise. 32 global sources. Scored hourly. On every phone on earth.',
+        'strapline':  'Signal over noise. 50+ global sources. Scored every 15 minutes. On every phone on earth.',
         'cta':        'Share MeDea →',
         'bg_color':   '#1c1a16',
         'accent':     '#2a5f43',
@@ -1088,24 +1121,24 @@ def _get_ads_for_slot(slot):
 # ── Geo-feed ──────────────────────────────────────────────────────────────────
 
 _REGION_SOURCES = {
-    'GB': ['The Guardian','Sky News','The Independent','Byline Times','Declassified UK','New Statesman','Novara Media','UnHerd','The Canary'],
+    'GB': ['The Guardian','Sky News','The Independent','Byline Times','Declassified UK','New Statesman','Novara Media','UnHerd','The Canary','Foreign Policy','Chatham House'],
     'IE': ['The Guardian','openDemocracy','Byline Times'],
-    'US': ['ProPublica','The Intercept','Democracy Now'],
-    'CA': ['ProPublica','The Intercept','Democracy Now'],
-    'AU': ['RNZ Pacific','The Conversation UK'],
-    'NZ': ['RNZ Pacific'],
-    'ZA': ['Mail & Guardian','The Conversation Africa'],
-    'NG': ['The Conversation Africa','IPS News'],
-    'KE': ['The Conversation Africa','IPS News'],
-    'GH': ['The Conversation Africa','IPS News'],
-    'ET': ['The Conversation Africa','IPS News'],
-    'IN': ['Asia Times','IPS News'],
-    'PK': ['Asia Times','IPS News'],
-    'JP': ['Asia Times'],
-    'SG': ['Asia Times'],
-    'PH': ['Asia Times'],
-    'ID': ['Asia Times'],
-    'TH': ['Asia Times'],
+    'US': ['ProPublica','The Intercept','Democracy Now','Foreign Policy','War on the Rocks','Seeking Alpha','WSJ Markets'],
+    'CA': ['ProPublica','The Intercept','Democracy Now','Foreign Policy'],
+    'AU': ['RNZ Pacific','The Conversation UK','The Diplomat'],
+    'NZ': ['RNZ Pacific','The Diplomat'],
+    'ZA': ['Mail & Guardian','The Conversation Africa','Rest of World'],
+    'NG': ['The Conversation Africa','IPS News','Rest of World'],
+    'KE': ['The Conversation Africa','IPS News','Rest of World'],
+    'GH': ['The Conversation Africa','IPS News','Rest of World'],
+    'ET': ['The Conversation Africa','IPS News','Rest of World'],
+    'IN': ['Asia Times','IPS News','The Diplomat','Rest of World'],
+    'PK': ['Asia Times','IPS News','The Diplomat'],
+    'JP': ['Asia Times','The Diplomat'],
+    'SG': ['Asia Times','The Diplomat','Rest of World'],
+    'PH': ['Asia Times','The Diplomat','Rest of World'],
+    'ID': ['Asia Times','The Diplomat','Rest of World'],
+    'TH': ['Asia Times','The Diplomat','Rest of World'],
     'AR': ['Buenos Aires Herald','Brasil Wire'],
     'BR': ['Brasil Wire','Buenos Aires Herald'],
     'MX': ['Buenos Aires Herald','IPS News'],
