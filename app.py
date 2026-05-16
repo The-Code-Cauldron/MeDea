@@ -87,6 +87,10 @@ FEEDS = [
     # Global Tech — technology outside the Western bubble
     ('Rest of World',         'https://restofworld.org/feed/',                         'Global Tech',      'https://restofworld.org'),
     ('IEEE Spectrum',         'https://spectrum.ieee.org/feeds/feed.rss',              'Technology',       'https://spectrum.ieee.org'),
+    # Congressional & insider trading — primary sources
+    ('Capitol Trades',    'https://www.capitoltrades.com/rss',                        'US Congress · Trades', 'https://www.capitoltrades.com'),
+    ('Benzinga',          'https://feeds.benzinga.com/benzinga',                      'Finance · Wire',   'https://www.benzinga.com'),
+    ('Investing.com',     'https://www.investing.com/rss/news.rss',                   'Finance · Wire',   'https://www.investing.com'),
     # Finance — expanded. Insider trades, market intelligence, contrarian analysis
     ('MarketWatch',           'https://feeds.marketwatch.com/marketwatch/topstories/', 'Finance',          'https://www.marketwatch.com'),
     ('Bloomberg Markets',     'https://feeds.bloomberg.com/markets/news.rss',          'Finance',          'https://www.bloomberg.com'),
@@ -299,7 +303,27 @@ _TOPIC_RULES = [
         r'merger|acquisition|short sell|activist investor|proxy fight|'
         r'nasdaq|nyse|ftse|s&p 500|dow jones|\bforex\b|commodity|commodities|'
         r'equities|portfolio|derivatives|options|futures|yield curve|bond market|'
-        r'wall street|seeking alpha|market cap|share price|stock price)\b', re.I)),
+        r'wall street|seeking alpha|market cap|share price|stock price|'
+        # Market movement — standard financial headline vocabulary
+        r'stocks?\b|shares? (?:fall|rise|gain|drop|surge|plunge|rally|climb|tumble|slip|jump|dip)|'
+        r'stock market|equity market|bull market|bear market|market rally|market crash|'
+        r'earnings? (?:beat|miss|per share|season|call)|eps\b|revenue (?:beat|miss)|profit warning|'
+        r'dividend[s]?\b|buyback\b|share repurchase|capital gains?\b|'
+        # Central banks and rates
+        r'federal reserve|the fed\b|fed (?:rate|cut|hike|hold|pause|pivot)|'
+        r'treasury yields?|10.year yield|rate (?:hike|cut|pause|decision)|'
+        # Crypto — financial context
+        r'bitcoin\b|ethereum\b|cryptocurrency|crypto market|crypto prices?|'
+        # Corporate finance
+        r'ipo price|listing\b|float\b|pre.?ipo|spac\b|rights issue|capital raise|'
+        r'quarterly (?:earnings|results|profit|revenue)|annual (?:results|profit)|'
+        # Insider/congressional trading
+        r'senator (?:buy|sell|bought|sold|purchased|traded)|'
+        r'congress(?:man|woman|member)? (?:buy|sell|bought|sold|purchased|traded)|'
+        r'capitol trades?|congressional (?:stock|trade)|'
+        # Breaking market news terms
+        r'market open|market close|closing bell|opening bell|pre.?market|after.?hours?|'
+        r'trading halt|circuit breaker|volatility index|\bvix\b)\b', re.I)),
     ('Economy',       re.compile(
         r'\b(?:inflation|gdp|recession|bank|interest rate|mortgage|housing|wages|cost of living|'
         r'economy|market|budget|tax|trade|tariff|investment|growth|poverty|unemployment|'
@@ -973,6 +997,36 @@ _PAGE_TITLE_RE = re.compile(r'<title[^>]*>(.*?)</title>', re.IGNORECASE | re.DOT
 _TITLE_SUFFIX_RE = re.compile(r'\s*[\|\-–—]\s*[^|\-–—]{3,60}$')
 
 
+def _get_most_read(pro_stories, limit=3):
+    if not _DB_URL or not pro_stories:
+        return []
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT url_hash, COUNT(*) AS clicks
+                    FROM story_clicks
+                    WHERE clicked_at >= CURRENT_DATE
+                    GROUP BY url_hash
+                    ORDER BY clicks DESC
+                    LIMIT 30
+                """)
+                top = {row[0]: row[1] for row in cur.fetchall()}
+        if not top:
+            return []
+        result = []
+        for story in pro_stories:
+            h = hashlib.sha256(story['url'].encode()).hexdigest()[:24]
+            if h in top:
+                s = dict(story)
+                s['click_count'] = top[h]
+                result.append(s)
+        result.sort(key=lambda x: x['click_count'], reverse=True)
+        return result[:limit]
+    except Exception:
+        return []
+
+
 def _extract_title(url):
     try:
         resp = requests.get(url, timeout=12, verify=False, allow_redirects=True,
@@ -1044,6 +1098,7 @@ def index():
     )
     d['country_name']  = _country_name(cc)
     d['issue_number']  = _issue_number()
+    d['most_read']     = _get_most_read(d['pro'])
     _log_pageview()
     return render_template('index.html', **d)
 
@@ -1147,8 +1202,8 @@ _SELF_PROMOS = {
         'headline':   'QuantumProtect',
         'strapline':  'Post-quantum cryptography. Protect your data against the threats already coming.',
         'cta':        'Explore free →',
-        'bg_color':   '#0f1a2e',
-        'accent':     '#2a5f43',
+        'bg_color':   '#060d1a',
+        'accent':     '#00e5cc',
         'self_promo': True,
     },
     'sidebar': {

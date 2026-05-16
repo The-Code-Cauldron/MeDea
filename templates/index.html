@@ -817,6 +817,56 @@
     color:var(--ink-3);font-weight:600;
   }
 
+  /* ───── QuantumProtect brand glow ───── */
+  .brand-glow{
+    text-shadow:0 0 8px currentColor,0 0 18px currentColor;
+    animation:qp-pulse 2.8s ease-in-out infinite;
+  }
+  @keyframes qp-pulse{
+    0%,100%{text-shadow:0 0 8px currentColor,0 0 18px currentColor}
+    50%{text-shadow:0 0 14px currentColor,0 0 32px currentColor,0 0 60px currentColor}
+  }
+
+  /* ───── Most read strip ───── */
+  .most-read{
+    margin-top:32px;padding:20px 24px;
+    background:var(--card);border:1px solid var(--rule);
+    border-left:3px solid var(--flag);
+  }
+  .most-read .mr-head{
+    display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    padding-bottom:12px;border-bottom:1px dashed var(--rule);margin-bottom:0;
+  }
+  .most-read .mr-label{
+    font-family:var(--sans);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+    font-weight:700;color:var(--flag);
+  }
+  .most-read .mr-meta{
+    font-family:var(--sans);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-4);font-weight:600;
+  }
+  .mr-story{
+    display:grid;grid-template-columns:20px 1fr;gap:14px;
+    padding:14px 0;border-bottom:1px solid var(--rule);
+  }
+  .mr-story:last-child{border-bottom:none}
+  .mr-rank{
+    font-family:var(--mono);font-size:11px;color:var(--ink-4);
+    padding-top:4px;font-variant-numeric:tabular-nums;
+  }
+  .mr-title{
+    font-family:var(--serif);font-weight:500;font-size:17px;line-height:1.3;
+    letter-spacing:-.005em;color:var(--ink);text-wrap:pretty;
+    font-variation-settings:"opsz" 18;
+  }
+  .mr-title:hover{color:var(--flag)}
+  .mr-byline{
+    margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+    font-family:var(--sans);font-size:10.5px;color:var(--ink-3);
+  }
+  .mr-src{color:var(--ink-2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:10px}
+  .mr-clicks{font-family:var(--mono);font-size:10px;color:var(--flag);font-variant-numeric:tabular-nums}
+
   /* ───── Ad slots ───── */
   .ad-strip{
     margin-top:16px;padding-top:8px;border-top:1px solid var(--rule);
@@ -1310,7 +1360,7 @@
        href="{{ ad.url }}" target="_blank" rel="noopener sponsored"
        style="background:{{ ad.bg_color }};border-left:4px solid {{ ad.accent }}"
        data-ads="{{ ad_list | tojson | e }}">
-      <div class="ad-brand" style="color:{{ ad.accent }}">{{ ad.headline }}</div>
+      <div class="ad-brand{% if 'Quantum' in (ad.headline|string) %} brand-glow{% endif %}" style="color:{{ ad.accent }}">{{ ad.headline }}</div>
       <div class="ad-strapline">{{ ad.strapline }}</div>
       <div class="ad-cta" style="color:{{ ad.bg_color }};background:{{ ad.accent }}">{{ ad.cta }}</div>
     </a>
@@ -1468,6 +1518,30 @@
   </section>
 
   {{ ad_slot(ad_top, 'top', ad_top_list) }}
+
+  <!-- ───── Most read ───── -->
+  {% if most_read %}
+  <div class="most-read">
+    <div class="mr-head">
+      <span class="mr-label">Most read today</span>
+      <span class="mr-meta">Signal-scored · readers' picks</span>
+    </div>
+    {% for h in most_read %}
+    <div class="mr-story">
+      <div class="mr-rank">{{ loop.index }}</div>
+      <div>
+        <a class="mr-title" href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
+        <div class="mr-byline">
+          <span class="mr-src">{{ h.source }}</span>
+          <span style="color:var(--ink-4)">·</span>
+          <span class="mr-clicks">{{ h.click_count }} {{ 'read' if h.click_count == 1 else 'reads' }}</span>
+          {% if h.pub_ago %}<span style="color:var(--ink-4)">·</span><span style="font-family:var(--mono);font-size:10px;color:var(--ink-4)">{{ h.pub_ago }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <!-- ───── Topic filter chips ───── -->
   {% set all_stories = pro + con + flagged %}
