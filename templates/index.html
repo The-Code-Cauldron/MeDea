@@ -1105,6 +1105,67 @@
     .submast{flex-direction:column;align-items:flex-start;gap:8px}
     .brand .mark{font-size:34px}
   }
+
+  /* ───── Score sparkline ───── */
+  .score-spark{
+    width:100%;height:20px;overflow:visible;
+    color:var(--pos-deep);margin-top:8px;display:block;
+  }
+  .score-spark[data-trend="down"]{color:var(--neg)}
+  .score-spark[data-trend="flat"]{color:var(--flag)}
+  #spark-trend-label{
+    font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+    font-family:var(--sans);font-weight:600;color:var(--ink-4);
+    transition:opacity .4s;margin-top:3px;
+  }
+
+  /* ───── Share link ───── */
+  .share-link{
+    font-family:var(--sans);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+    font-weight:600;color:var(--pos-deep);border-bottom:1px solid var(--pos-soft);
+    padding-bottom:1px;transition:color .15s,border-color .15s;cursor:pointer;
+    text-decoration:none;
+  }
+  .share-link:hover{border-color:var(--pos-deep)}
+
+  /* ───── Email signup strip ───── */
+  .signup-strip{
+    margin-top:32px;padding:24px;background:var(--card);border:1px solid var(--rule);
+    border-top:3px solid var(--ink);
+  }
+  .signup-inner{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+  .signup-text{flex-shrink:0}
+  .signup-label{
+    font-family:var(--sans);font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    font-weight:700;color:var(--ink-4);margin-bottom:6px;
+  }
+  .signup-pitch{
+    font-family:var(--serif);font-size:17px;font-weight:300;color:var(--ink-2);
+    line-height:1.4;max-width:28ch;font-variation-settings:"opsz" 17;
+  }
+  .signup-form{display:flex;flex-direction:column;gap:8px;flex:1;min-width:280px}
+  .signup-input{
+    background:var(--paper-2);border:1px solid var(--rule);
+    font-family:var(--sans);font-size:13px;color:var(--ink);
+    padding:10px 12px;outline:none;
+  }
+  .signup-input:focus{border-color:var(--pos-deep)}
+  .signup-consent{
+    display:flex;align-items:flex-start;gap:8px;
+    font-family:var(--sans);font-size:11px;color:var(--ink-3);line-height:1.5;cursor:pointer;
+  }
+  .signup-consent input{margin-top:2px;flex-shrink:0;cursor:pointer}
+  .signup-btn{align-self:flex-start}
+  .signup-done{
+    font-family:var(--serif);font-size:17px;font-weight:300;font-style:italic;
+    color:var(--pos-deep);font-variation-settings:"opsz" 17;
+  }
+  @media(max-width:640px){
+    .signup-inner{flex-direction:column;gap:16px}
+    .signup-text .signup-pitch{max-width:100%}
+    .signup-form{min-width:0;width:100%}
+    .signup-btn{align-self:stretch;text-align:center;display:block}
+  }
 </style>
 </head>
 <body>
@@ -1182,7 +1243,7 @@
       <span class="tagline">News worth reading</span>
     </div>
     <div class="center">
-      <span class="vol">Vol. I</span>
+      <span class="vol">Vol. I &nbsp;·&nbsp; No. {{ issue_number }}</span>
       <span>{{ last_updated or 'Today' }}</span>
     </div>
     <div class="right">
@@ -1220,6 +1281,7 @@
       <span><strong style="color:var(--pos-deep)">{{ pro_count }}</strong> worth reading</span>
       <span><strong style="color:var(--neg)">{{ con_count }}</strong> filtered</span>
       <span><strong style="color:var(--flag)">{{ flagged_count }}</strong> held</span>
+      <a class="share-link" href="#" onclick="shareScore();return false" title="Share today's score">Share ↗</a>
     </div>
   </div>
   {% if admin and traffic %}
@@ -1283,8 +1345,31 @@
       </div>
       <div class="ticks {% if score_class == 'dial-neutral' %}neutral{% elif score_class == 'dial-bad' %}bad{% endif %}" id="ratio-ticks"></div>
       <div class="label">Signal score · out of 100</div>
+      <svg class="score-spark" viewBox="0 0 140 20" width="140" height="20" preserveAspectRatio="none" aria-hidden="true">
+        <polyline id="spark-line" points="" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <div id="spark-trend-label" class="label" style="opacity:0"></div>
     </div>
   </section>
+
+  <!-- ───── Newsletter signup ───── -->
+  <div class="signup-strip" id="signup-strip">
+    <div class="signup-inner">
+      <div class="signup-text">
+        <div class="signup-label">The MeDea Digest</div>
+        <div class="signup-pitch">Daily signal report, direct to you. Launching soon.</div>
+      </div>
+      <div class="signup-form" id="signup-form">
+        <input class="signup-input" id="signup-email" type="email" placeholder="your@email.com" autocomplete="email" aria-label="Email address"/>
+        <label class="signup-consent">
+          <input type="checkbox" id="signup-consent-box">
+          <span>I agree to receive the MeDea digest. Unsubscribe any time.</span>
+        </label>
+        <button class="btn signup-btn" id="signup-btn" onclick="submitSubscribe()" type="button">Join the list</button>
+      </div>
+      <div class="signup-done" id="signup-done" style="display:none">You're on the list. We'll be in touch when it launches.</div>
+    </div>
+  </div>
 
   {{ ad_slot(ad_top, 'top', ad_top_list) }}
 
@@ -1510,7 +1595,7 @@
           {% if opinion %}
           <div class="os-body" id="os-body">{{ opinion.body }}</div>
           <div class="os-foot">
-            <span class="os-disclaimer">Opinion only &nbsp;·&nbsp; Entertainment purposes &nbsp;·&nbsp; Not advice</span>
+            <span class="os-disclaimer">Editorial opinion of the Editor in Chief &nbsp;·&nbsp; Not news &nbsp;·&nbsp; Not advice</span>
             <span class="os-ts">{{ opinion.updated_at }}</span>
           </div>
           {% endif %}
@@ -1781,10 +1866,12 @@
   </div>
 
   <footer class="colophon">
-    <div class="l"><em>MeDea</em> &nbsp;·&nbsp; <a href="https://the-architect-neo.github.io/" target="_blank" rel="noopener" style="color:inherit;border-bottom:1px solid currentColor;padding-bottom:1px">The Architect</a> &nbsp;·&nbsp; © 2026 &nbsp;·&nbsp; Refreshes hourly</div>
+    <div class="l"><em>MeDea</em> &nbsp;·&nbsp; Editor in Chief: <a href="https://the-architect-neo.github.io/" target="_blank" rel="noopener" style="color:inherit;border-bottom:1px solid currentColor;padding-bottom:1px">The Architect</a> &nbsp;·&nbsp; © 2026 &nbsp;·&nbsp; Signal scored algorithmically. Editorial layer applied.</div>
     <div class="r">
-      <span>Made with VADER sentiment analysis</span>
-      <a href="https://medea-production-dd4b.up.railway.app" target="_blank" rel="noopener">medea-production-dd4b.up.railway.app</a>
+      <a href="/about#methodology" style="color:var(--ink-2);border-bottom:1px solid var(--rule);padding-bottom:1px">Methodology</a>
+      <a href="/about#editorial" style="color:var(--ink-2);border-bottom:1px solid var(--rule);padding-bottom:1px">Editorial standards</a>
+      <a href="/about#privacy" style="color:var(--ink-2);border-bottom:1px solid var(--rule);padding-bottom:1px">Privacy</a>
+      <a href="mailto:axion-project@proton.me" style="color:var(--ink-2);border-bottom:1px solid var(--rule);padding-bottom:1px">Contact</a>
     </div>
   </footer>
 
@@ -2338,6 +2425,71 @@
       if (data.error){ alert(data.error); return; }
       renderFeed([],false); updateMeta(0); _lastDispatchId=null;
     });
+  }
+
+  /* ───── Score sparkline ───── */
+  (function initSparkline(){
+    fetch('/api/score/history').then(r=>r.json()).then(data=>{
+      if (!data || data.length < 2) return;
+      const scores = data.map(d => d.score);
+      const mn = Math.min(...scores), mx = Math.max(...scores);
+      const range = mx - mn || 1;
+      const W = 140, H = 20, pad = 2;
+      const pts = scores.map((s,i)=>{
+        const x = pad + (i/(scores.length-1))*(W-2*pad);
+        const y = H - pad - ((s-mn)/range)*(H-2*pad);
+        return x.toFixed(1)+','+y.toFixed(1);
+      }).join(' ');
+      const line = document.getElementById('spark-line');
+      if (line) line.setAttribute('points', pts);
+      const first = scores[0], last = scores[scores.length-1];
+      const trend = last > first+3 ? 'up' : last < first-3 ? 'down' : 'flat';
+      const svg = document.querySelector('.score-spark');
+      if (svg) svg.dataset.trend = trend;
+      const lbl = document.getElementById('spark-trend-label');
+      if (lbl){
+        lbl.textContent = trend==='up' ? '↑ improving' : trend==='down' ? '↓ declining' : '→ steady';
+        lbl.style.opacity = '1';
+      }
+    }).catch(()=>{});
+  })();
+
+  /* ───── Share score ───── */
+  function shareScore(){
+    var score = parseInt(document.querySelector('.ratio .num')?.textContent, 10);
+    if (isNaN(score)) return;
+    var n = {{ sources|length }};
+    var url = 'https://medea-production-dd4b.up.railway.app';
+    var text = 'Today’s news: '+score+' in 100 headlines worth reading. MeDea measured it across '+n+' newsrooms. '+url;
+    if (navigator.share){
+      navigator.share({title:'MeDea Signal Report', text: text.replace(' '+url,''), url: url}).catch(()=>{});
+    } else {
+      window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text),'_blank','width=600,height=400,noreferrer');
+    }
+  }
+
+  /* ───── Newsletter subscribe ───── */
+  function submitSubscribe(){
+    var email   = (document.getElementById('signup-email')?.value||'').trim();
+    var consent = document.getElementById('signup-consent-box');
+    var btn     = document.getElementById('signup-btn');
+    if (!email){ document.getElementById('signup-email').focus(); return; }
+    if (consent && !consent.checked){
+      var span = consent.nextElementSibling;
+      if (span){ span.style.color='var(--neg)'; setTimeout(()=>{ span.style.color=''; },2000); }
+      return;
+    }
+    btn.disabled=true; btn.textContent='Joining…';
+    fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email})})
+    .then(r=>r.json()).then(d=>{
+      if (d.error){ btn.disabled=false; btn.textContent='Join the list'; return; }
+      var form = document.getElementById('signup-form');
+      var done = document.getElementById('signup-done');
+      if (form) form.style.display='none';
+      if (done) done.style.display='block';
+    })
+    .catch(()=>{ btn.disabled=false; btn.textContent='Join the list'; });
   }
 </script>
 

@@ -1,0 +1,222 @@
+<!-- ARCH-MDA-ABOUT -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeDea — Methodology &amp; Editorial Standards</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1c1a16" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f1e6" media="(prefers-color-scheme: light)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  (function(){
+    try{
+      var s = localStorage.getItem('medea-theme');
+      document.documentElement.setAttribute('data-theme',
+        s === 'dark' || s === 'paper' ? s :
+        (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'paper'));
+    } catch(e){ document.documentElement.setAttribute('data-theme','paper'); }
+  })();
+</script>
+<style>
+  :root, :root[data-theme="paper"]{
+    --paper:#f6f1e6;--paper-2:#efe9d9;--card:#fbf8f0;--ink:#1c1a16;--ink-2:#4a463e;
+    --ink-3:#807a6c;--ink-4:#b3ad9d;--rule:#e4dcc7;--rule-soft:#ece5d3;
+    --pos:#3f7f5d;--pos-deep:#2a5f43;--pos-soft:#d8e7dc;
+    --neg:#a8412c;--neg-soft:#ecd7cf;--flag:#b1812a;
+    --serif:'Newsreader','Iowan Old Style',Georgia,'Times New Roman',serif;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  }
+  :root[data-theme="dark"]{
+    --paper:#141310;--paper-2:#1a1813;--card:#1c1a15;--ink:#ece4d2;--ink-2:#b8b09e;
+    --ink-3:#807a6c;--ink-4:#534e44;--rule:#2a2720;--rule-soft:#221f19;
+    --pos:#7cc295;--pos-deep:#92d3ac;--pos-soft:#1f3024;
+    --neg:#d7836c;--neg-soft:#3a2017;--flag:#d9b25f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;background-color:var(--paper)}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:860px;margin:0 auto;padding:40px clamp(24px,4vw,60px) 100px}
+
+  /* Masthead */
+  header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:16px;
+    padding-bottom:18px;border-bottom:1px solid var(--ink);margin-bottom:48px}
+  .mark{font-family:var(--serif);font-weight:600;font-style:italic;font-size:36px;letter-spacing:-.025em;color:var(--ink)}
+  .mark em{color:var(--pos-deep);font-style:italic}
+  .back{font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:600;color:var(--ink-3);border-bottom:1px solid var(--rule);padding-bottom:1px;
+    transition:color .15s,border-color .15s}
+  .back:hover{color:var(--pos-deep);border-color:var(--pos-deep)}
+
+  /* Sections */
+  .doc-section{margin-bottom:56px}
+  .section-label{font-family:var(--sans);font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;
+    font-weight:700;color:var(--pos-deep);margin-bottom:14px}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(30px,4vw,44px);
+    line-height:1.08;letter-spacing:-.02em;margin-bottom:20px;font-variation-settings:"opsz" 40}
+  h2{font-family:var(--serif);font-weight:500;font-size:24px;letter-spacing:-.01em;
+    margin-bottom:14px;font-variation-settings:"opsz" 24}
+  p{font-family:var(--serif);font-size:18px;line-height:1.6;color:var(--ink-2);
+    font-weight:300;margin-bottom:18px;font-variation-settings:"opsz" 18;max-width:68ch}
+  p strong{color:var(--ink);font-weight:600}
+  p a{border-bottom:1px solid var(--rule);padding-bottom:1px;transition:color .15s,border-color .15s}
+  p a:hover{color:var(--pos-deep);border-color:var(--pos-deep)}
+
+  /* Rule */
+  .rule{border:none;border-top:1px solid var(--rule);margin:0 0 48px}
+
+  /* Score explainer */
+  .score-demo{display:flex;align-items:center;gap:24px;margin:24px 0 32px;flex-wrap:wrap}
+  .score-num{font-family:var(--mono);font-size:72px;font-weight:500;color:var(--pos-deep);
+    line-height:.9;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+  .score-explain{font-family:var(--serif);font-size:16px;line-height:1.55;color:var(--ink-2);
+    font-weight:300;max-width:40ch;font-variation-settings:"opsz" 16}
+
+  /* Stage table */
+  .stage-table{width:100%;border-collapse:collapse;margin:20px 0 32px}
+  .stage-table th{font-family:var(--sans);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    font-weight:700;color:var(--ink-4);text-align:left;padding:8px 0;border-bottom:1px solid var(--ink)}
+  .stage-table td{font-family:var(--serif);font-size:16px;color:var(--ink-2);padding:12px 0;
+    border-bottom:1px solid var(--rule);vertical-align:top;font-weight:300;
+    font-variation-settings:"opsz" 16}
+  .stage-table td:first-child{font-weight:500;color:var(--ink);font-family:var(--sans);
+    font-size:13px;padding-right:24px;white-space:nowrap}
+  .badge{display:inline-block;font-family:var(--sans);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;font-weight:700;padding:3px 9px;border-radius:2px;white-space:nowrap}
+  .badge-pro{background:var(--pos-soft);color:var(--pos-deep)}
+  .badge-con{background:var(--neg-soft);color:var(--neg)}
+  .badge-flag{background:#ecdfb8;color:var(--flag)}
+
+  /* Privacy list */
+  .privacy-list{margin:12px 0 20px 0;padding:0}
+  .privacy-list li{font-family:var(--serif);font-size:17px;line-height:1.6;color:var(--ink-2);
+    font-weight:300;padding:8px 0;border-bottom:1px solid var(--rule-soft);
+    list-style:none;font-variation-settings:"opsz" 18}
+  .privacy-list li::before{content:"—";margin-right:12px;color:var(--ink-4)}
+
+  /* Footer */
+  footer{margin-top:72px;padding-top:22px;border-top:1px solid var(--ink);
+    display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:14px;
+    font-family:var(--sans);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+  footer em{font-style:italic;color:var(--pos-deep);font-weight:600;letter-spacing:.04em;
+    text-transform:none;font-family:var(--serif);font-size:13px}
+  footer a{color:var(--ink-2);border-bottom:1px solid var(--rule);padding-bottom:1px}
+  footer a:hover{color:var(--pos-deep);border-color:var(--pos-deep)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="mark">Me<em>Dea</em></div>
+    <a class="back" href="/">← Back to the signal</a>
+  </header>
+
+  <!-- ── Section 1: What this is ── -->
+  <section class="doc-section">
+    <div class="section-label">About</div>
+    <h1>Methodology &amp; Editorial Standards</h1>
+    <p>MeDea reads {{ source_count }} independent newsrooms every 30 minutes, scores every headline for emotional valence, and publishes the ratio. That ratio is the ProCon Score — the percentage of headlines that score positive on any given cycle.</p>
+    <p>Most news products help you consume more. MeDea helps you consume less, better. We filter the noise so you can read the signal.</p>
+    <p><strong>This is not a fact-checker.</strong> We do not verify the accuracy of individual stories. We measure the emotional framing of the news environment — how the media, collectively, is choosing to present the world to you at this moment.</p>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ── Section 2: The Score ── -->
+  <section class="doc-section" id="methodology">
+    <div class="section-label">Methodology</div>
+    <h2>The ProCon Score</h2>
+    <div class="score-demo">
+      <div class="score-num">42</div>
+      <div class="score-explain">means 42 in every 100 headlines we read today scored positive. The other 58 were negative or ambiguous.</div>
+    </div>
+    <p>The score is calculated as: <strong>(positive headlines ÷ total scored headlines) × 100</strong>. A score of 30 means the news environment is 70% negative. That is a number you can act on.</p>
+    <p>Headline sentiment is scored using VADER (Valence Aware Dictionary and sEntiment Reasoner), a lexicon and rule-based tool calibrated for short social text. VADER produces a compound score from −1.0 (most negative) to +1.0 (most positive).</p>
+    <p>VADER is a starting point, not the final word. An additional editorial layer catches what the algorithm misses — conflict framing, sarcasm, press releases, junk results, and topics where positive language masks a fundamentally negative story. A headline that VADER scores as positive but contains conflict or crime context is held for judgement rather than promoted.</p>
+
+    <h2 style="margin-top:32px">How headlines are classified</h2>
+    <table class="stage-table">
+      <thead><tr><th>Label</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-pro">Pro</span></td><td>Compound score ≥ 0.15 and no negative context detected. Worth reading.</td></tr>
+        <tr><td><span class="badge badge-con">Con</span></td><td>Compound score ≤ −0.05. Negative — filtered from the main feed.</td></tr>
+        <tr><td><span class="badge badge-flag">Held</span></td><td>Score positive but context is ambiguous — conflict framing, sarcasm risk, opinion, or clickbait. Shown separately. Editorial judgement applied before filing to The Dispatch.</td></tr>
+      </tbody>
+    </table>
+
+    <p>Headlines from satire sites, press releases, lottery results, and sports fixtures are excluded entirely — they add noise without signal.</p>
+    <p>Each source is capped at 4 positive headlines per cycle (6 for investigative outlets) to prevent any single source dominating the feed. Stories that appear across multiple sources are deduplicated.</p>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ── Section 3: Editorial Standards ── -->
+  <section class="doc-section" id="editorial">
+    <div class="section-label">Editorial Standards</div>
+    <h2>The Dispatch</h2>
+    <p>The Dispatch is the editor-curated layer above the algorithm. Any story filed to The Dispatch has been read by the Editor in Chief and judged to add editorial value beyond the automatic feed — either because the algorithm would miss it, misclassify it, or because its importance demands a human hand on the wheel.</p>
+    <p>Stories in The Dispatch carry the same VADER score for transparency, but the filing decision was editorial, not algorithmic.</p>
+
+    <h2 style="margin-top:32px">Source selection</h2>
+    <p>Sources are selected for editorial independence, consistent output, and a demonstrable track record. The current roster includes investigative outlets, independent media, academic publications, and global broadcasters. The bias label shown next to each source reflects that outlet's documented editorial position — it is a descriptor, not a judgement on quality.</p>
+    <p>We do not carry state-funded media that operates under editorial direction from its government. We do not carry outlets that exist primarily to advocate for a single commercial or political interest.</p>
+    <p>The source roster is reviewed periodically. Sources are added when they meet the independence criteria; removed when output becomes unreliable or the feed goes inactive.</p>
+
+    <h2 style="margin-top:32px">OpinionSays</h2>
+    <p>OpinionSays is the editorial voice of the Editor in Chief. It appears when the news environment warrants a direct statement. It is clearly labelled as editorial opinion. It is not a news report, not a prediction, and not advice of any kind.</p>
+
+    <h2 style="margin-top:32px">What we are not</h2>
+    <p>We are not journalists in the traditional sense. We do not send reporters to stories. We do not conduct original interviews. We are a signal intelligence layer on top of the journalism others produce. The Dispatch is the exception — when original editorial judgement is applied to a specific story.</p>
+    <p>The Editor in Chief is The Architect — a practitioner with 20+ years in fraud intelligence, financial crime, telecoms operations, and insurance. The editorial lens is operational. What is the information doing? Who benefits from it being framed this way? What is missing?</p>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ── Section 4: Privacy ── -->
+  <section class="doc-section" id="privacy">
+    <div class="section-label">Privacy Notice</div>
+    <h2>What we collect and why</h2>
+    <p>MeDea does not use advertising tracking, third-party analytics, or behavioural profiling. We do not sell data. We do not use cookies for tracking purposes.</p>
+
+    <ul class="privacy-list">
+      <li><strong>Theme preference</strong> — stored in your browser's localStorage. Never sent to our servers. Functional only. No consent required.</li>
+      <li><strong>Page view counts</strong> — we record a one-way hash of your IP address combined with today's date, alongside your device type (mobile or desktop). The hash cannot be reversed to identify you. It is used solely to count unique daily visitors. No IP address is stored in its raw form. Records older than 90 days are not queried.</li>
+      <li><strong>Story click signals</strong> — if you click a story, we record the topic category and source, linked to a hash of the URL. No personal identifier is attached.</li>
+      <li><strong>Ad impressions</strong> — we count when an ad slot is viewed. No personal identifier is attached.</li>
+      <li><strong>Shoutouts</strong> — if you send a paid message via the Shoutout feature, Stripe processes your payment. We store your message, name (if provided), and email address (if provided) in order to respond. Stripe's privacy policy governs the payment transaction.</li>
+    </ul>
+
+    <p>We do not use Google Analytics, Facebook Pixel, or any third-party tracking script. The only external services loaded on this page are Google Fonts (typography) and Stripe (payment processing, shoutouts only).</p>
+    <p>This site is operated by The Architect. For any privacy query, contact <a href="mailto:axion-project@proton.me">axion-project@proton.me</a>.</p>
+    <p style="margin-top:8px">Last updated: May 2026</p>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ── Section 5: Contact ── -->
+  <section class="doc-section" id="contact">
+    <div class="section-label">Contact</div>
+    <h2>Editorial and advertising enquiries</h2>
+    <p>To reach the Editor in Chief — story tips, corrections, advertising, or partnership enquiries — email <a href="mailto:axion-project@proton.me">axion-project@proton.me</a>.</p>
+    <p>For advertising specifications and rate card, the media kit is available on request.</p>
+    <p>MeDea is published by The Architect. Live at <a href="https://medea-production-dd4b.up.railway.app">medea-production-dd4b.up.railway.app</a>. Source code maintained at <a href="https://github.com/The-Code-Cauldron/MeDea" target="_blank" rel="noopener">The-Code-Cauldron/MeDea</a>.</p>
+  </section>
+
+  <footer>
+    <div><em>MeDea</em> &nbsp;·&nbsp; The Architect &nbsp;·&nbsp; © 2026</div>
+    <div style="display:flex;gap:24px">
+      <a href="/">Signal report</a>
+      <a href="/about#methodology">Methodology</a>
+      <a href="/about#editorial">Editorial standards</a>
+      <a href="/about#privacy">Privacy</a>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

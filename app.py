@@ -83,6 +83,11 @@ REFRESH_INTERVAL    = 1800
 POSITIVE_THRESHOLD  =  0.15
 NEGATIVE_THRESHOLD  = -0.05
 
+_LAUNCH_DATE = datetime(2026, 5, 11, tzinfo=timezone.utc)
+
+def _issue_number():
+    return max(1, (datetime.now(timezone.utc) - _LAUNCH_DATE).days + 1)
+
 _analyzer = SentimentIntensityAnalyzer()
 
 _SESSION = requests.Session()
@@ -494,6 +499,24 @@ def _init_db():
                         notes        TEXT
                     )
                 """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS score_history (
+                        id          SERIAL PRIMARY KEY,
+                        score       INTEGER,
+                        pro_count   INTEGER,
+                        con_count   INTEGER,
+                        total       INTEGER,
+                        recorded_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS subscribers (
+                        id            SERIAL PRIMARY KEY,
+                        email         TEXT UNIQUE NOT NULL,
+                        confirmed     BOOLEAN DEFAULT FALSE,
+                        subscribed_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
             conn.commit()
         log.info('Dispatch DB ready')
     except Exception as exc:
@@ -550,6 +573,41 @@ def _db_clear():
         with conn.cursor() as cur:
             cur.execute('DELETE FROM dispatches')
         conn.commit()
+
+
+def _record_score(score, pro_count, con_count, total):
+    if not _DB_URL or score is None:
+        return
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    'INSERT INTO score_history (score, pro_count, con_count, total) VALUES (%s,%s,%s,%s)',
+                    (score, pro_count, con_count, total)
+                )
+            conn.commit()
+    except Exception as exc:
+        log.error(f'_record_score: {exc}')
+
+
+def _get_score_history():
+    try:
+        with _db_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT DATE(recorded_at AT TIME ZONE 'UTC') AS day,
+                           ROUND(AVG(score))::int               AS score
+                    FROM score_history
+                    WHERE recorded_at >= NOW() - INTERVAL '7 days'
+                      AND score IS NOT NULL
+                    GROUP BY day
+                    ORDER BY day ASC
+                """)
+                rows = cur.fetchall()
+        return [{'day': str(r['day']), 'score': r['score']} for r in rows]
+    except Exception as exc:
+        log.error(f'_get_score_history: {exc}')
+        return []
 
 
 def _get_sponsors(limit=10, unfulfilled_only=False):
@@ -759,6 +817,8 @@ def _fetch():
     with _prog_lock:
         _progress['status'] = 'done'
 
+    _record_score(score, len(all_pro), len(all_con), len(all_pro) + len(all_con) + len(all_flagged))
+
 
 def _loop():
     _init_db()
@@ -856,7 +916,8 @@ def index():
     d['regional_stories'], d['country_code'] = _get_regional_stories(
         cc, d['pro'], d['con'], d['flagged']
     )
-    d['country_name'] = _country_name(cc)
+    d['country_name']  = _country_name(cc)
+    d['issue_number']  = _issue_number()
     _log_pageview()
     return render_template('index.html', **d)
 
@@ -1262,6 +1323,39 @@ def api_score():
         })
 
 
+@app.route('/api/score/history')
+def api_score_history():
+    return jsonify(_get_score_history() if _DB_URL else [])
+
+
+@app.route('/api/subscribe', methods=['POST'])
+def api_subscribe():
+    if not _DB_URL:
+        return jsonify({'error': 'Not available'}), 503
+    data  = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip().lower()
+    if not email or '@' not in email or '.' not in email.split('@')[-1]:
+        return jsonify({'error': 'Valid email address required'}), 400
+    if len(email) > 254:
+        return jsonify({'error': 'Email too long'}), 400
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    'INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO NOTHING',
+                    (email,)
+                )
+                inserted = cur.rowcount
+            conn.commit()
+        if inserted:
+            log.info(f'New subscriber: {email[:4]}...{email.split("@")[1]}')
+            return jsonify({'status': 'subscribed'})
+        return jsonify({'status': 'already_subscribed'})
+    except Exception as exc:
+        log.error(f'subscribe: {exc}')
+        return jsonify({'error': 'Could not save — try again'}), 500
+
+
 @app.route('/api/progress')
 def api_progress():
     with _prog_lock:
@@ -1350,6 +1444,14 @@ self.addEventListener('fetch', e => {
 @app.route('/offline')
 def offline():
     return render_template('offline.html')
+
+
+@app.route('/about')
+def about():
+    with _lock:
+        source_count = len(_state['sources'])
+        last_updated = _state['last_updated']
+    return render_template('about.html', source_count=source_count, last_updated=last_updated)
 
 
 # ── Intelligence layer ───────────────────────────────────────────────────────
