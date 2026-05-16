@@ -1923,17 +1923,14 @@
 
 </div>
 
-<!-- ───── Floating mobile ad ───── -->
+<!-- ───── Floating mobile ad — Change2Crypto ───── -->
 {% if ready %}
 <div class="ad-float" id="ad-float"
-     style="background:{{ ad_sidebar.bg_color }};border-top:3px solid {{ ad_sidebar.accent }}">
-  <button class="ad-float-dismiss" onclick="document.getElementById('ad-float').style.display='none'" aria-label="Dismiss">×</button>
-  <a class="ad-brand" href="{{ ad_sidebar.url }}" target="_blank" rel="noopener sponsored"
-     style="color:{{ ad_sidebar.accent }};text-decoration:none">{{ ad_sidebar.headline }}</a>
-  <a class="ad-strapline" href="{{ ad_sidebar.url }}" target="_blank" rel="noopener sponsored"
-     style="text-decoration:none;color:rgba(255,255,255,.78)">{{ ad_sidebar.strapline }}</a>
-  <a class="ad-cta" href="{{ ad_sidebar.url }}" target="_blank" rel="noopener sponsored"
-     style="color:{{ ad_sidebar.bg_color }};background:{{ ad_sidebar.accent }};text-decoration:none">{{ ad_sidebar.cta }}</a>
+     style="background:#0c1f14;border-top:3px solid #c9a84c">
+  <button class="ad-float-dismiss" onclick="document.getElementById('ad-float').style.display='none'" aria-label="Dismiss" style="color:#c9a84c">×</button>
+  <span class="ad-brand" style="color:#c9a84c">Change2Crypto</span>
+  <span class="ad-strapline" style="color:rgba(236,228,210,.78)">Loose change. Real yield. The financially excluded deserve better.</span>
+  <span class="ad-cta" style="color:#0c1f14;background:#c9a84c">In motion →</span>
 </div>
 {% endif %}
 
