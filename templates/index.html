@@ -806,7 +806,7 @@
 
   /* ───── Ad slots ───── */
   .ad-strip{
-    margin-top:40px;padding-top:10px;border-top:1px solid var(--rule);
+    margin-top:16px;padding-top:8px;border-top:1px solid var(--rule);
   }
   .ad-label{
     font-family:var(--sans);font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;
@@ -814,7 +814,7 @@
   }
   .ad-banner{
     display:flex;align-items:center;justify-content:space-between;
-    gap:24px;text-decoration:none;padding:18px 24px;
+    gap:20px;text-decoration:none;padding:10px 20px;
     transition:opacity .15s;
   }
   .ad-banner:hover{opacity:.88}
@@ -1169,60 +1169,37 @@
   .share-link:hover{border-color:var(--pos-deep)}
 
   /* ───── Email signup strip ───── */
-  .signup-strip{
-    margin-top:32px;padding:0;background:var(--card);border:1px solid var(--rule);
-    border-top:3px solid var(--ink);
+  /* ───── Email signup bar (slim) ───── */
+  .signup-bar{
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+    padding:12px 0;border-top:1px solid var(--rule);margin-top:32px;
   }
-  .signup-inner{
-    display:grid;grid-template-columns:1fr 220px;
-    max-width:100%;
+  .sb-pitch{
+    font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    font-weight:600;color:var(--ink-3);white-space:nowrap;flex-shrink:0;
   }
-  .signup-left{padding:24px;display:flex;flex-direction:column;gap:8px}
-  .signup-right{
-    padding:24px 24px 24px 20px;
-    border-left:1px solid var(--rule);
-    display:flex;flex-direction:column;justify-content:center;
-  }
-  .signup-text{flex-shrink:0;margin-bottom:4px}
-  .signup-label{
-    font-family:var(--sans);font-size:10px;letter-spacing:.28em;text-transform:uppercase;
-    font-weight:700;color:var(--ink-4);margin-bottom:6px;
-  }
-  .signup-pitch{
-    font-family:var(--serif);font-size:16px;font-weight:300;color:var(--ink-2);
-    line-height:1.4;max-width:32ch;font-variation-settings:"opsz" 16;
-  }
-  .signup-form{display:flex;flex-direction:column;gap:8px}
-  /* context card */
-  .ctx-clabel{font-family:var(--sans);font-size:9px;letter-spacing:.28em;text-transform:uppercase;font-weight:700;color:var(--ink-4);margin-bottom:12px}
-  .ctx-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
-  .ctx-num{font-family:var(--mono);font-size:30px;font-weight:500;color:var(--pos-deep);line-height:.9;font-variant-numeric:tabular-nums}
-  .ctx-lbl{font-family:var(--sans);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);font-weight:600}
-  .ctx-trend{font-family:var(--sans);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;margin-top:6px}
-  .ctx-loading{font-family:var(--mono);font-size:11px;color:var(--ink-4);letter-spacing:.08em}
-  .signup-input{
+  .sb-form{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+  .sb-input{
     background:var(--paper-2);border:1px solid var(--rule);
-    font-family:var(--sans);font-size:13px;color:var(--ink);
-    padding:10px 12px;outline:none;
+    font-family:var(--sans);font-size:12px;color:var(--ink);
+    padding:7px 10px;outline:none;min-width:180px;flex:1;
   }
-  .signup-input:focus{border-color:var(--pos-deep)}
-  .signup-consent{
-    display:flex;align-items:flex-start;gap:8px;
-    font-family:var(--sans);font-size:11px;color:var(--ink-3);line-height:1.5;cursor:pointer;
+  .sb-input:focus{border-color:var(--pos-deep)}
+  .sb-consent{
+    display:flex;align-items:center;gap:6px;
+    font-family:var(--sans);font-size:10.5px;color:var(--ink-3);cursor:pointer;white-space:nowrap;
   }
-  .signup-consent input{margin-top:2px;flex-shrink:0;cursor:pointer}
-  .signup-btn{align-self:flex-start}
-  .signup-done{
-    font-family:var(--serif);font-size:17px;font-weight:300;font-style:italic;
-    color:var(--pos-deep);font-variation-settings:"opsz" 17;
-  }
-  @media(max-width:768px){
-    .signup-inner{grid-template-columns:1fr}
-    .signup-right{border-left:none;border-top:1px solid var(--rule);padding-top:16px}
+  .sb-consent input{flex-shrink:0;cursor:pointer}
+  .sb-done{
+    font-family:var(--sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--pos-deep);font-weight:600;
   }
   @media(max-width:640px){
-    .signup-left,.signup-right{padding:18px}
-    .signup-btn{align-self:stretch;text-align:center;display:block}
+    .signup-bar{flex-direction:column;align-items:stretch;gap:10px}
+    .sb-pitch{display:none}
+    .sb-form{flex-direction:column}
+    .sb-input{min-width:0}
+    .sb-consent{white-space:normal}
   }
 </style>
 </head>
@@ -1415,36 +1392,6 @@
     </div>
   </section>
 
-  <!-- ───── Newsletter signup ───── -->
-  <div class="signup-strip" id="signup-strip">
-    <div class="signup-inner">
-      <div class="signup-left">
-        <div class="signup-text">
-          <div class="signup-label">The MeDea Digest</div>
-          <div class="signup-pitch">Daily signal report, direct to you. Launching soon.</div>
-        </div>
-        <div class="signup-form" id="signup-form">
-          <input class="signup-input" id="signup-email" type="email" placeholder="your@email.com" autocomplete="email" aria-label="Email address"/>
-          <label class="signup-consent">
-            <input type="checkbox" id="signup-consent-box">
-            <span>I agree to receive the MeDea digest. Unsubscribe any time.</span>
-          </label>
-          <button class="btn signup-btn" id="signup-btn" onclick="submitSubscribe()" type="button">Join the list</button>
-        </div>
-        <div class="signup-done" id="signup-done" style="display:none">You're on the list. We'll be in touch when it launches.</div>
-      </div>
-      <div class="signup-right">
-        <div class="ctx-clabel">7-day signal</div>
-        <div class="ctx-loading" id="ctx-loading">—</div>
-        <div id="ctx-content" style="display:none">
-          <div class="ctx-row"><span class="ctx-num" id="ctx-avg-val">—</span><span class="ctx-lbl">avg</span></div>
-          <div class="ctx-row"><span class="ctx-num" id="ctx-today-val">—</span><span class="ctx-lbl">today</span></div>
-          <div class="ctx-trend" id="ctx-trend"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   {{ ad_slot(ad_top, 'top', ad_top_list) }}
 
   <!-- ───── Topic filter chips ───── -->
@@ -1459,39 +1406,6 @@
     <button class="topic-chip" data-filter="{{ t }}" onclick="filterTopic(this)">{{ t }} <span class="chip-count">{{ tcount }}</span></button>
     {% endfor %}
   </div>
-  {% endif %}
-
-  <!-- ───── Your Signal (geo-feed) ───── -->
-  {% if regional_stories or country_code not in ('XX', '') %}
-  <section class="geo-section">
-    <div class="section-head">
-      <h2 class="ttl">Your <em>Signal</em></h2>
-      <span class="geo-flag">{{ country_name if country_name != country_code else 'Global' }}</span>
-    </div>
-    {% if regional_stories %}
-    <div class="geo-grid">
-      {% for h in regional_stories %}
-      <div class="geo-card">
-        <div class="gc-topic">
-          <span class="gc-label-{{ h.label }}">{{ 'Pro' if h.label == 'pro' else 'Con' if h.label == 'con' else 'Held' }}</span>
-          {{ h.topic }}
-          {% if h.pub_ago %}<span style="margin-left:auto">{{ h.pub_ago }}</span>{% endif %}
-        </div>
-        <div class="gc-title">
-          <a href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
-        </div>
-        <div class="gc-meta">
-          <span class="gc-src">{{ h.source }}</span>
-          <span>{{ h.bias }}</span>
-          {% if h.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ h.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <p class="geo-none">No regional stories in this cycle. Global feed covering you.</p>
-    {% endif %}
-  </section>
   {% endif %}
 
   <!-- ───── Stories ───── -->
@@ -1747,6 +1661,39 @@
     </aside>
   </section>
 
+  <!-- ───── Your Signal (geo-feed) ───── -->
+  {% if regional_stories or country_code not in ('XX', '') %}
+  <section class="geo-section">
+    <div class="section-head">
+      <h2 class="ttl">Your <em>Signal</em></h2>
+      <span class="geo-flag">{{ country_name if country_name != country_code else 'Global' }}</span>
+    </div>
+    {% if regional_stories %}
+    <div class="geo-grid">
+      {% for h in regional_stories %}
+      <div class="geo-card">
+        <div class="gc-topic">
+          <span class="gc-label-{{ h.label }}">{{ 'Pro' if h.label == 'pro' else 'Con' if h.label == 'con' else 'Held' }}</span>
+          {{ h.topic }}
+          {% if h.pub_ago %}<span style="margin-left:auto">{{ h.pub_ago }}</span>{% endif %}
+        </div>
+        <div class="gc-title">
+          <a href="{{ h.url }}" target="_blank" rel="noopener">{{ h.title }}</a>
+        </div>
+        <div class="gc-meta">
+          <span class="gc-src">{{ h.source }}</span>
+          <span>{{ h.bias }}</span>
+          {% if h.paywalled %}<a class="pill paywall" href="https://archive.ph/newest/{{ h.url }}" target="_blank" rel="noopener">Archived</a>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="geo-none">No regional stories in this cycle. Global feed covering you.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
   <!-- ───── Filtered + Held — full width, side by side ───── -->
   <div class="below-stories">
     <div class="filtered-strip">
@@ -1887,6 +1834,20 @@
     {% endfor %}
   </section>
   {% endif %}
+
+  <!-- ───── Newsletter signup bar ───── -->
+  <div class="signup-bar" id="signup-strip">
+    <span class="sb-pitch">The MeDea digest</span>
+    <div class="sb-form" id="signup-form">
+      <input class="sb-input" id="signup-email" type="email" placeholder="your@email.com" autocomplete="email" aria-label="Email address"/>
+      <label class="sb-consent">
+        <input type="checkbox" id="signup-consent-box">
+        <span>I agree to receive the digest. Unsubscribe any time.</span>
+      </label>
+      <button class="btn sb-btn" id="signup-btn" onclick="submitSubscribe()" type="button">Join →</button>
+    </div>
+    <div class="sb-done" id="signup-done" style="display:none">You're on the list.</div>
+  </div>
 
   {{ ad_slot(ad_mid, 'mid', ad_mid_list) }}
 
