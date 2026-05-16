@@ -930,50 +930,78 @@
   /* ── REALGAZ property ad unit ── */
   /* ── REALGAZ premium property ad ── */
   .realgaz-ad{
-    display:block;text-decoration:none;
-    background:#120e06;
+    display:block;width:100%;box-sizing:border-box;
+    text-decoration:none;background:#120e06;
     border-top:2px solid #c9a84c;
-    transition:opacity .15s;
+    transition:opacity .15s;overflow:hidden;
   }
-  .realgaz-ad:hover{opacity:.93}
-  .rg-head{
-    padding:9px 20px 8px;
-    border-bottom:1px solid rgba(201,168,76,.18);
+  .realgaz-ad:hover{opacity:.94}
+  .rg-location{
+    padding:9px 18px;border-bottom:1px solid rgba(201,168,76,.16);
     display:flex;align-items:center;justify-content:space-between;
   }
-  .rg-eye{
-    font-family:var(--sans);font-size:7.5px;letter-spacing:.40em;
-    text-transform:uppercase;font-weight:700;color:rgba(201,168,76,.65);
+  .rg-loc-text{
+    font-family:var(--sans);font-size:7.5px;letter-spacing:.38em;
+    text-transform:uppercase;font-weight:700;color:rgba(201,168,76,.6);
   }
-  .rg-badge{
-    font-family:var(--sans);font-size:7.5px;letter-spacing:.22em;
-    text-transform:uppercase;font-weight:700;
-    color:#120e06;background:rgba(201,168,76,.65);padding:2px 7px;
+  .rg-status{
+    font-family:var(--sans);font-size:7px;letter-spacing:.20em;text-transform:uppercase;
+    font-weight:700;color:#120e06;background:#c9a84c;padding:3px 8px;
   }
-  .rg-body{padding:18px 20px 0}
+  .rg-main{padding:16px 18px 14px}
+  .rg-type{
+    font-family:var(--serif);font-size:11px;font-style:italic;font-weight:300;
+    color:rgba(201,168,76,.55);margin-bottom:4px;
+  }
+  .rg-address{
+    font-family:var(--serif);font-size:18px;font-weight:500;
+    letter-spacing:-.01em;color:#ece4d2;line-height:1.1;margin-bottom:4px;
+    font-variation-settings:"opsz" 18;
+  }
+  .rg-locale{
+    font-family:var(--sans);font-size:10px;letter-spacing:.12em;
+    color:rgba(236,228,210,.45);text-transform:uppercase;font-weight:500;
+  }
+  .rg-stats{
+    display:grid;grid-template-columns:1fr 1fr 1fr;
+    gap:1px;background:rgba(201,168,76,.12);
+    margin:14px 0;border:1px solid rgba(201,168,76,.12);
+  }
+  .rg-stat{
+    background:#120e06;padding:10px 10px 8px;text-align:center;
+  }
+  .rg-stat-val{
+    font-family:var(--mono);font-size:16px;font-weight:500;
+    color:#c9a84c;line-height:1;font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em;
+  }
+  .rg-stat-lbl{
+    font-family:var(--sans);font-size:7px;letter-spacing:.22em;
+    text-transform:uppercase;font-weight:600;
+    color:rgba(236,228,210,.35);margin-top:4px;
+  }
+  .rg-desc{
+    font-family:var(--serif);font-size:12px;font-style:italic;font-weight:300;
+    color:rgba(236,228,210,.55);line-height:1.5;margin-bottom:2px;
+    font-variation-settings:"opsz" 12;
+  }
+  .rg-brand-bar{
+    padding:10px 18px;border-top:1px solid rgba(201,168,76,.12);
+    display:flex;align-items:center;justify-content:space-between;
+  }
   .rg-brand{
-    font-family:var(--sans);font-size:14px;font-weight:800;
-    letter-spacing:.40em;text-transform:uppercase;
-    color:#c9a84c;margin-bottom:14px;
+    font-family:var(--sans);font-size:9.5px;font-weight:800;
+    letter-spacing:.32em;text-transform:uppercase;color:rgba(201,168,76,.5);
   }
-  .rg-rule{height:1px;background:rgba(201,168,76,.15);margin-bottom:12px}
-  .rg-specs{display:flex;flex-direction:column}
-  .rg-spec{
-    font-family:var(--serif);font-size:13px;font-weight:300;font-style:italic;
-    color:rgba(236,228,210,.84);line-height:1;
-    padding:6px 0;border-bottom:1px solid rgba(201,168,76,.07);
-  }
-  .rg-spec:last-child{border-bottom:none}
-  .rg-spec strong{font-style:normal;font-weight:600;color:#ece4d2;font-size:11px;letter-spacing:.04em;font-family:var(--sans);margin-right:6px}
-  .rg-avail{
-    font-family:var(--sans);font-size:8px;letter-spacing:.34em;text-transform:uppercase;
-    font-weight:700;color:#c9a84c;padding:14px 20px 0;
+  .rg-rarity{
+    font-family:var(--sans);font-size:7.5px;letter-spacing:.18em;text-transform:uppercase;
+    font-weight:600;color:rgba(201,168,76,.5);
   }
   .rg-cta{
-    display:block;margin-top:14px;
-    font-family:var(--sans);font-size:9.5px;letter-spacing:.30em;text-transform:uppercase;
+    display:block;width:100%;box-sizing:border-box;
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;
     font-weight:700;color:#120e06;background:#c9a84c;
-    padding:14px 20px;text-align:center;
+    padding:13px 18px;text-align:center;
     transition:background .15s;
   }
   .realgaz-ad:hover .rg-cta{background:#d4b55a}
@@ -1559,22 +1587,35 @@
           </div>
           <div class="dispatch-sponsor">
           <a class="realgaz-ad" href="mailto:axion-project@proton.me?subject=REALGAZ%20Property%20Enquiry" target="_blank" rel="noopener">
-            <div class="rg-head">
-              <span class="rg-eye">Property &nbsp;·&nbsp; Uxbridge &nbsp;·&nbsp; UB10</span>
-              <span class="rg-badge">Viewing now</span>
+            <div class="rg-location">
+              <span class="rg-loc-text">Uxbridge &nbsp;·&nbsp; UB10 &nbsp;·&nbsp; Hillingdon</span>
+              <span class="rg-status">For sale</span>
             </div>
-            <div class="rg-body">
-              <div class="rg-brand">Realgaz</div>
-              <div class="rg-rule"></div>
-              <div class="rg-specs">
-                <div class="rg-spec"><strong>Plot</strong> 0.11 acres &nbsp;·&nbsp; chalet bungalow</div>
-                <div class="rg-spec"><strong>Beds</strong> Three bedrooms &nbsp;·&nbsp; family bathroom</div>
-                <div class="rg-spec"><strong>Garden</strong> East-facing &nbsp;·&nbsp; morning sun</div>
-                <div class="rg-spec"><strong>Road</strong> M25 five minutes &nbsp;·&nbsp; Uxbridge tube</div>
+            <div class="rg-main">
+              <div class="rg-type">Chalet bungalow &nbsp;·&nbsp; freehold</div>
+              <div class="rg-address">0.11-Acre Plot,<br>Uxbridge</div>
+              <div class="rg-locale">West London &nbsp;·&nbsp; 5 min M25</div>
+              <div class="rg-stats">
+                <div class="rg-stat">
+                  <div class="rg-stat-val">3</div>
+                  <div class="rg-stat-lbl">Bedrooms</div>
+                </div>
+                <div class="rg-stat">
+                  <div class="rg-stat-val">0.11ac</div>
+                  <div class="rg-stat-lbl">Plot size</div>
+                </div>
+                <div class="rg-stat">
+                  <div class="rg-stat-val">E</div>
+                  <div class="rg-stat-lbl">Aspect</div>
+                </div>
               </div>
+              <div class="rg-desc">East-facing garden. Multi-car drive. Shuttered windows. Rarely available at this plot size.</div>
             </div>
-            <div class="rg-avail">Rarely available &nbsp;·&nbsp; Direct enquiries welcome</div>
-            <div class="rg-cta">Enquire directly &nbsp;→</div>
+            <div class="rg-brand-bar">
+              <span class="rg-brand">Realgaz</span>
+              <span class="rg-rarity">Viewing available now</span>
+            </div>
+            <div class="rg-cta">Request details &nbsp;&nbsp;→</div>
           </a>
           <div style="padding:14px 22px 12px;font-family:var(--serif);font-style:italic;font-weight:300;font-size:13px;line-height:1.5;color:var(--ink-3)">
             Support the Dispatch —

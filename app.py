@@ -64,6 +64,9 @@ FEEDS = [
     ('The Register',        'https://www.theregister.com/headlines.atom',           'Technology',    'https://www.theregister.com'),
     ('Carbon Brief',        'https://www.carbonbrief.org/feed/',                    'Environment',   'https://www.carbonbrief.org'),
     ('Al-Monitor',          'https://www.al-monitor.com/rss',                       'Middle East',   'https://www.al-monitor.com'),
+    # Finance — market intelligence, insider trades, congressional activity
+    ('Seeking Alpha',       'https://seekingalpha.com/market_currents.xml',          'Finance',       'https://seekingalpha.com'),
+    ('WSJ Markets',         'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',         'Finance',       'https://www.wsj.com/news/markets'),
 ]
 
 PRO_SOURCE_CAP      = 4
@@ -182,6 +185,13 @@ _TOPIC_RULES = [
         r'\b(?:hospital|nhs|cancer|mental health|drug|vaccine|disease|medical|patient|health|'
         r'treatment|clinical|gp|surgery|pandemic|outbreak|virus|drug|medicine|obesity|'
         r'dementia|stroke|diabetes|ambulance|a&e|emergency|wellbeing|pharmaceutical)\b', re.I)),
+    ('Finance',       re.compile(
+        r'\b(?:insider trading|congressional trade|sec filing|form 4|hedge fund|'
+        r'private equity|venture capital|\bipo\b|earnings report|quarterly results|'
+        r'merger|acquisition|short sell|activist investor|proxy fight|'
+        r'nasdaq|nyse|ftse|s&p 500|dow jones|\bforex\b|commodity|commodities|'
+        r'equities|portfolio|derivatives|options|futures|yield curve|bond market|'
+        r'wall street|seeking alpha|market cap|share price|stock price)\b', re.I)),
     ('Economy',       re.compile(
         r'\b(?:inflation|gdp|recession|bank|interest rate|mortgage|housing|wages|cost of living|'
         r'economy|market|budget|tax|trade|tariff|investment|growth|poverty|unemployment|'
