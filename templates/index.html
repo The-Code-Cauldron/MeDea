@@ -1950,18 +1950,22 @@
   {{ ad_slot(ad_mid, 'mid', ad_mid_list) }}
 
   <!-- ───── Sources ───── -->
+  {% set ns = namespace(active=0) %}
+  {% for name, s in sources.items() %}
+    {% if (s.pro or 0) + (s.con or 0) + (s.flagged or 0) > 0 %}{% set ns.active = ns.active + 1 %}{% endif %}
+  {% endfor %}
   <section class="sources">
     <div class="section-head">
       <button class="sources-toggle" id="sources-toggle" onclick="toggleSources()" aria-expanded="false" aria-controls="sources-body" type="button">
         Sources <span class="toggle-arrow">▼</span>
       </button>
-      <span class="meta">{{ sources|length }} newsrooms</span>
+      <span class="meta">{{ ns.active }} of {{ sources|length }} active</span>
     </div>
     <div class="sources-body collapsed" id="sources-body">
     <p style="font-family:var(--serif);font-size:15px;font-weight:300;font-style:italic;color:var(--ink-2);line-height:1.55;margin:12px 0 20px;max-width:72ch;font-variation-settings:'opsz' 16">
-      Every 30 minutes we read {{ sources|length }} newsrooms across six continents.
+      We monitor {{ sources|length }} newsrooms across six continents. {{ ns.active }} contributed to this cycle.
       Green is signal — worth reading. Red is noise — set aside. Amber is held — positive score, negative context.
-      Bias labels reflect editorial position. Offline sources are rechecked each cycle.
+      Bias labels reflect editorial position.
     </p>
     <div class="sources-grid">
       {% for name, s in sources.items() %}
@@ -1969,28 +1973,22 @@
       {% set c = s.con or 0 %}
       {% set f = s.flagged or 0 %}
       {% set tot = (p + c + f) %}
+      {% if tot > 0 %}
       <div class="src-row">
         <div class="src-name">
           <a class="nm" href="{{ s.website }}" target="_blank" rel="noopener">{{ name }}</a>
           <span class="b">{{ s.bias or 'N/A' }}</span>
         </div>
         <div class="src-bar">
-          {% if s.error %}
-            <i class="err"></i>
-          {% elif tot > 0 %}
-            <i class="pos" style="width: {{ (p / tot * 100)|round(2) }}%"></i>
-            <i class="neg" style="width: {{ (c / tot * 100)|round(2) }}%"></i>
-            <i class="flg" style="width: {{ (f / tot * 100)|round(2) }}%"></i>
-          {% endif %}
+          <i class="pos" style="width: {{ (p / tot * 100)|round(2) }}%"></i>
+          <i class="neg" style="width: {{ (c / tot * 100)|round(2) }}%"></i>
+          <i class="flg" style="width: {{ (f / tot * 100)|round(2) }}%"></i>
         </div>
         <div class="src-counts">
-          {% if s.error %}
-            <span class="err" title="{{ s.consecutive_err }} consecutive missed cycles">offline{% if s.consecutive_err > 2 %} ×{{ s.consecutive_err }}{% endif %}</span>
-          {% else %}
-            <span class="p">{{ p }}</span><span style="color:var(--ink-4)">·</span><span class="c">{{ c }}</span><span style="color:var(--ink-4)">·</span><span class="f">{{ f }}</span>
-          {% endif %}
+          <span class="p">{{ p }}</span><span style="color:var(--ink-4)">·</span><span class="c">{{ c }}</span><span style="color:var(--ink-4)">·</span><span class="f">{{ f }}</span>
         </div>
       </div>
+      {% endif %}
       {% endfor %}
     </div>
     </div><!-- /sources-body -->
