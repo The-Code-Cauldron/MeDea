@@ -928,21 +928,55 @@
   }
   .dispatch-sponsor a:hover{background:var(--pos)}
   /* ── REALGAZ property ad unit ── */
+  /* ── REALGAZ premium property ad ── */
   .realgaz-ad{
-    display:flex;align-items:center;justify-content:space-between;gap:14px;
-    padding:18px 22px;background:#1a1208;flex-wrap:wrap;
-    text-decoration:none;transition:opacity .2s;border-top:3px solid #c9a84c;
+    display:block;text-decoration:none;
+    background:#120e06;
+    border-top:2px solid #c9a84c;
+    transition:opacity .15s;
   }
-  .realgaz-ad:hover{opacity:.9}
-  .rg-left{}
-  .rg-eye{font-family:var(--sans);font-size:8.5px;letter-spacing:.34em;text-transform:uppercase;font-weight:700;color:#c9a84c;margin-bottom:5px}
-  .rg-brand{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.01em;color:#ece4d2;line-height:1}
-  .rg-pitch{font-family:var(--serif);font-size:12px;font-style:italic;font-weight:300;color:rgba(236,228,210,.65);line-height:1.45;margin-top:5px;max-width:36ch}
+  .realgaz-ad:hover{opacity:.93}
+  .rg-head{
+    padding:9px 20px 8px;
+    border-bottom:1px solid rgba(201,168,76,.18);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .rg-eye{
+    font-family:var(--sans);font-size:7.5px;letter-spacing:.40em;
+    text-transform:uppercase;font-weight:700;color:rgba(201,168,76,.65);
+  }
+  .rg-badge{
+    font-family:var(--sans);font-size:7.5px;letter-spacing:.22em;
+    text-transform:uppercase;font-weight:700;
+    color:#120e06;background:rgba(201,168,76,.65);padding:2px 7px;
+  }
+  .rg-body{padding:18px 20px 0}
+  .rg-brand{
+    font-family:var(--sans);font-size:14px;font-weight:800;
+    letter-spacing:.40em;text-transform:uppercase;
+    color:#c9a84c;margin-bottom:14px;
+  }
+  .rg-rule{height:1px;background:rgba(201,168,76,.15);margin-bottom:12px}
+  .rg-specs{display:flex;flex-direction:column}
+  .rg-spec{
+    font-family:var(--serif);font-size:13px;font-weight:300;font-style:italic;
+    color:rgba(236,228,210,.84);line-height:1;
+    padding:6px 0;border-bottom:1px solid rgba(201,168,76,.07);
+  }
+  .rg-spec:last-child{border-bottom:none}
+  .rg-spec strong{font-style:normal;font-weight:600;color:#ece4d2;font-size:11px;letter-spacing:.04em;font-family:var(--sans);margin-right:6px}
+  .rg-avail{
+    font-family:var(--sans);font-size:8px;letter-spacing:.34em;text-transform:uppercase;
+    font-weight:700;color:#c9a84c;padding:14px 20px 0;
+  }
   .rg-cta{
-    font-family:var(--sans);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;
-    font-weight:700;color:#1a1208;background:#c9a84c;
-    padding:9px 16px;white-space:nowrap;flex-shrink:0;
+    display:block;margin-top:14px;
+    font-family:var(--sans);font-size:9.5px;letter-spacing:.30em;text-transform:uppercase;
+    font-weight:700;color:#120e06;background:#c9a84c;
+    padding:14px 20px;text-align:center;
+    transition:background .15s;
   }
+  .realgaz-ad:hover .rg-cta{background:#d4b55a}
   /* ── Sources collapsible ── */
   .sources-toggle{
     appearance:none;background:transparent;border:none;cursor:pointer;
@@ -1525,12 +1559,22 @@
           </div>
           <div class="dispatch-sponsor">
           <a class="realgaz-ad" href="mailto:axion-project@proton.me?subject=REALGAZ%20Property%20Enquiry" target="_blank" rel="noopener">
-            <div class="rg-left">
-              <div class="rg-eye">Property · Uxbridge</div>
-              <div class="rg-brand">REALGAZ</div>
-              <div class="rg-pitch">0.11-acre plot. 3 beds. East garden. M25 five minutes. Rarely available. Viewing now.</div>
+            <div class="rg-head">
+              <span class="rg-eye">Property &nbsp;·&nbsp; Uxbridge &nbsp;·&nbsp; UB10</span>
+              <span class="rg-badge">Viewing now</span>
             </div>
-            <div class="rg-cta">Enquire directly →</div>
+            <div class="rg-body">
+              <div class="rg-brand">Realgaz</div>
+              <div class="rg-rule"></div>
+              <div class="rg-specs">
+                <div class="rg-spec"><strong>Plot</strong> 0.11 acres &nbsp;·&nbsp; chalet bungalow</div>
+                <div class="rg-spec"><strong>Beds</strong> Three bedrooms &nbsp;·&nbsp; family bathroom</div>
+                <div class="rg-spec"><strong>Garden</strong> East-facing &nbsp;·&nbsp; morning sun</div>
+                <div class="rg-spec"><strong>Road</strong> M25 five minutes &nbsp;·&nbsp; Uxbridge tube</div>
+              </div>
+            </div>
+            <div class="rg-avail">Rarely available &nbsp;·&nbsp; Direct enquiries welcome</div>
+            <div class="rg-cta">Enquire directly &nbsp;→</div>
           </a>
           <div style="padding:14px 22px 12px;font-family:var(--serif);font-style:italic;font-weight:300;font-size:13px;line-height:1.5;color:var(--ink-3)">
             Support the Dispatch —
