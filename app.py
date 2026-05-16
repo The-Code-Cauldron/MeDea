@@ -80,7 +80,7 @@ INVESTIGATIVE_SOURCES = frozenset({
 })
 
 REFRESH_INTERVAL    = 1800
-POSITIVE_THRESHOLD  =  0.05
+POSITIVE_THRESHOLD  =  0.15
 NEGATIVE_THRESHOLD  = -0.05
 
 _analyzer = SentimentIntensityAnalyzer()
@@ -129,9 +129,17 @@ _NEGATIVE_CONTEXT = frozenset({
     'bankrupt', 'insolvent', 'receivership', 'liquidation', 'repossessed',
     # Conflict/humanitarian — VADER misreads these as positive (relief, aid, UNICEF)
     'civilian', 'civilians', 'airstrike', 'airstrikes', 'bombing', 'bombed',
-    'bombardment', 'casualt', 'casualties', 'displaced', 'siege', 'occupation',
-    'massacre', 'genocide', 'ceasefire', 'troops', 'offensive', 'shelling',
+    'bombardment', 'casualty', 'casualties', 'displaced', 'siege', 'occupation',
+    'massacre', 'genocide', 'ceasefire', 'truce', 'troops', 'offensive', 'shelling',
     'wounded', 'humanitarian', 'evacuate', 'evacuation', 'rubble', 'blockade',
+    # Crime / violence — VADER misreads justice framing as positive
+    'suspect', 'suspects', 'executed', 'execution', 'suicide', 'overdose',
+    'trafficking', 'abducted', 'abduction', 'detained', 'detainee',
+    'survivor', 'survivors', 'victim', 'victims',
+    # Displacement and crisis
+    'flee', 'fleeing', 'fled', 'refugee', 'refugees',
+    # Terror — always conflict context regardless of framing
+    'terror', 'terrorist', 'terrorists', 'terrorism',
 })
 
 _FORCE_NEGATIVE_RE = re.compile(
@@ -297,6 +305,11 @@ def _quality_flags(title, url, compound):
 
     if _FRAMING_RISK_RE.search(title):
         framing_risk = True
+
+    # War & Conflict headlines almost never belong in the pro feed.
+    # Require compound >= 0.5 (strongly positive) — below that, flag for review.
+    if compound < 0.5 and _get_topic(title) == 'War & Conflict':
+        sarcasm_risk = True
 
     return {
         'sarcasm_risk':  sarcasm_risk,
