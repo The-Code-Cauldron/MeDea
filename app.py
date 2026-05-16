@@ -87,6 +87,68 @@ FEEDS = [
     # Global Tech — technology outside the Western bubble
     ('Rest of World',         'https://restofworld.org/feed/',                         'Global Tech',      'https://restofworld.org'),
     ('IEEE Spectrum',         'https://spectrum.ieee.org/feeds/feed.rss',              'Technology',       'https://spectrum.ieee.org'),
+    # Finance — expanded. Insider trades, market intelligence, contrarian analysis
+    ('MarketWatch',           'https://feeds.marketwatch.com/marketwatch/topstories/', 'Finance',          'https://www.marketwatch.com'),
+    ('Bloomberg Markets',     'https://feeds.bloomberg.com/markets/news.rss',          'Finance',          'https://www.bloomberg.com'),
+    ('CNBC Finance',          'https://www.cnbc.com/id/10001147/device/rss/rss.html',  'Finance',          'https://www.cnbc.com/finance/'),
+    ('Yahoo Finance',         'https://finance.yahoo.com/news/rssindex',               'Finance',          'https://finance.yahoo.com'),
+    ('Zero Hedge',            'https://feeds.feedburner.com/zerohedge/feed',           'Finance · Contrarian', 'https://www.zerohedge.com'),
+    ('Wolf Street',           'https://wolfstreet.com/feed/',                          'Finance · Analysis', 'https://wolfstreet.com'),
+    ('Naked Capitalism',      'https://www.nakedcapitalism.com/feed/',                 'Finance · Left',   'https://www.nakedcapitalism.com'),
+    ('City A.M.',             'https://www.cityam.com/feed/',                          'Finance · UK',     'https://www.cityam.com'),
+    ("This Is Money",         'https://www.thisismoney.co.uk/home/rss.html',           'Finance · UK',     'https://www.thisismoney.co.uk'),
+    ("Barron's",              'https://www.barrons.com/xml/rss/3_7014.xml',            'Finance',          'https://www.barrons.com'),
+    ('GuruFocus',             'https://www.gurufocus.com/term/rss.php?r=news',         'Finance',          'https://www.gurufocus.com'),
+    # Investigative — expanded
+    ('The Markup',            'https://themarkup.org/feeds/rss.xml',                  'Investigative',    'https://themarkup.org'),
+    ('Bureau of Investigative Journalism', 'https://www.thebureauinvestigates.com/feed', 'Investigative', 'https://www.thebureauinvestigates.com'),
+    ('OCCRP',                 'https://www.occrp.org/en/feed.rss',                    'Investigative',    'https://www.occrp.org'),
+    # Global news — Asia, South Asia, Africa, Middle East
+    ('The Hindu',             'https://www.thehindu.com/feeder/default.rss',           'India',            'https://www.thehindu.com'),
+    ('Dawn Pakistan',         'https://www.dawn.com/feeds/home',                       'South Asia',       'https://www.dawn.com'),
+    ('Daily Maverick',        'https://dailymaverick.co.za/feed/',                     'Africa',           'https://dailymaverick.co.za'),
+    ('Jerusalem Post',        'https://www.jpost.com/rss/rssfeedsfrontpage',           'Middle East',      'https://www.jpost.com'),
+    ('Al Arabiya English',    'https://english.alarabiya.net/tools/rss',               'Middle East',      'https://english.alarabiya.net'),
+    ('Scroll.in',             'https://scroll.in/feed',                                'India',            'https://scroll.in'),
+    ('The Wire India',        'https://thewire.in/section/economy/feed',               'India',            'https://thewire.in'),
+    ('South China Morning Post', 'https://www.scmp.com/rss/91/feed',                  'Asia',             'https://www.scmp.com'),
+    ('The New Arab',          'https://www.newarab.com/rss',                           'Middle East',      'https://www.newarab.com'),
+    ('Arab News',             'https://www.arabnews.com/rss.xml',                      'Middle East · Gulf', 'https://www.arabnews.com'),
+    ('Haaretz English',       'https://www.haaretz.com/cmlink/1.526659',               'Middle East',      'https://www.haaretz.com'),
+    ('The Express Tribune',   'https://tribune.com.pk/feed',                           'South Asia',       'https://tribune.com.pk'),
+    # Policy / think tanks
+    ('Brookings Institution', 'https://www.brookings.edu/feed/',                       'Policy',           'https://www.brookings.edu'),
+    ('Council on Foreign Relations', 'https://www.cfr.org/rss.xml',                   'Policy · US',      'https://www.cfr.org'),
+    ('RAND Corporation',      'https://www.rand.org/pubs/rss/all.xml',                 'Policy · Research','https://www.rand.org'),
+    ('International Crisis Group', 'https://www.crisisgroup.org/rss.xml',             'Policy · Conflict','https://www.crisisgroup.org'),
+    ('Wilson Center',         'https://www.wilsoncenter.org/rss.xml',                  'Policy',           'https://www.wilsoncenter.org'),
+    # Environment / climate — expanded
+    ('Climate Home News',     'https://www.climatechangenews.com/feed/',               'Environment',      'https://www.climatechangenews.com'),
+    ('Yale E360',             'https://e360.yale.edu/rss.xml',                         'Environment',      'https://e360.yale.edu'),
+    ('DeSmog',                'https://www.desmog.com/feed/',                          'Environment · Investigative', 'https://www.desmog.com'),
+    # Cybersecurity
+    ('Krebs on Security',     'https://krebsonsecurity.com/feed/',                     'Cybersecurity',    'https://krebsonsecurity.com'),
+    ('The Record',            'https://therecord.media/news/feed/rss/',                'Cybersecurity',    'https://therecord.media'),
+    ('Dark Reading',          'https://www.darkreading.com/rss.xml',                   'Cybersecurity',    'https://www.darkreading.com'),
+    # Science
+    ('New Scientist',         'https://www.newscientist.com/feed/home/',               'Science',          'https://www.newscientist.com'),
+    ('Nature News',           'https://www.nature.com/nature.rss',                     'Science',          'https://www.nature.com'),
+    # UK / European press
+    ('The Spectator',         'https://www.spectator.co.uk/feed/',                     'Right',            'https://www.spectator.co.uk'),
+    ('Social Europe',         'https://www.socialeurope.eu/feed',                      'Europe · Left',    'https://www.socialeurope.eu'),
+    ('Tribune Magazine',      'https://tribunemag.co.uk/feed',                         'Left',             'https://tribunemag.co.uk'),
+    ('Politico Europe',       'https://www.politico.eu/rss',                           'Europe · Politics','https://www.politico.eu'),
+    # Americas / labour
+    ('The American Prospect', 'https://prospect.org/feed/',                            'Left · Economics', 'https://prospect.org'),
+    ('The Conversation Global', 'https://theconversation.com/global/articles.atom',    'Academic',         'https://theconversation.com/global'),
+    # Eastern Europe / Eurasia
+    ('Meduza',                'https://meduza.io/rss/all',                             'Russia · Independent', 'https://meduza.io'),
+    ('Eurasianet',            'https://eurasianet.org/rss.xml',                        'Central Asia',     'https://eurasianet.org'),
+    # Balance — centre-right and progressive
+    ('The Bulwark',           'https://thebulwark.com/feed/',                          'Centre-Right',     'https://thebulwark.com'),
+    ('Jacobin',               'https://jacobin.com/feed/',                             'Left',             'https://jacobin.com'),
+    ('Truthout',              'https://truthout.org/feed/',                            'Left · Investigative', 'https://truthout.org'),
+    ('The Week UK',           'https://theweek.com/rss',                               'Independent',      'https://theweek.com'),
 ]
 
 PRO_SOURCE_CAP      = 4
@@ -107,6 +169,20 @@ INVESTIGATIVE_SOURCES = frozenset({
     'MIT Tech Review',
     'Project Syndicate',
     'Rest of World',
+    # New investigative and accountability
+    'The Markup',
+    'Bureau of Investigative Journalism',
+    'OCCRP',
+    'DeSmog',
+    'Krebs on Security',
+    'The Record',
+    'Daily Maverick',
+    # Policy / think tank — analysis, not breaking news
+    'Brookings Institution',
+    'Council on Foreign Relations',
+    'RAND Corporation',
+    'International Crisis Group',
+    'Wilson Center',
 })
 
 REFRESH_INTERVAL    =  900
@@ -274,6 +350,8 @@ _PAYWALL_DOMAINS = frozenset({
     'nytimes.com',
     'theathletic.com',
     'theinformation.com',
+    'barrons.com',
+    'haaretz.com',
 })
 
 # Domains that always score maximum positive — no pipeline, no filters

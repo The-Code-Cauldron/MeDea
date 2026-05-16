@@ -68,9 +68,9 @@
 <body>
 <div class="card">
   <div class="brand">Me<em>Dea</em></div>
-  <div class="sub">Admin access</div>
+  <div class="sub">Editor access</div>
   {% if error %}
-  <div class="error">Token not recognised — try again</div>
+  <div class="error">Token not recognised. Try again.</div>
   {% endif %}
   <form method="POST" action="/login" autocomplete="off">
     <input type="password" name="token" placeholder="Enter admin token"

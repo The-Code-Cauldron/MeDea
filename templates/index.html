@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MeDea — News worth reading</title>
+<title>MeDea — Signal intelligence. Daily.</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1c1a16" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f6f1e6" media="(prefers-color-scheme: light)">
@@ -136,7 +136,7 @@
   }
   .brand .mark em{color:var(--pos-deep);font-style:italic}
   .brand .tagline{
-    font-family:var(--sans);font-size:11px;letter-spacing:.40em;text-transform:uppercase;
+    font-family:var(--sans);font-size:11px;letter-spacing:.28em;text-transform:uppercase;
     color:var(--ink-3);font-weight:500;
   }
   .masthead-rule{height:1px;background:var(--rule);margin:0 0 10px}
@@ -306,7 +306,7 @@
     padding-bottom:14px;border-bottom:1px solid var(--ink);margin-bottom:24px;
   }
   .section-head .ttl{
-    font-family:var(--serif);font-style:italic;font-weight:500;font-size:24px;
+    font-family:var(--serif);font-style:italic;font-weight:500;font-size:26px;
     letter-spacing:-.01em;color:var(--ink);
   }
   .section-head .ttl em{color:var(--pos-deep);font-style:italic}
@@ -331,7 +331,7 @@
   }
   .feature h2{
     font-family:var(--serif);font-weight:500;
-    font-size: clamp(28px, 3.4vw, 40px);
+    font-size: clamp(28px, 3.4vw, 44px);
     line-height:1.1;letter-spacing:-.015em;color:var(--ink);text-wrap:balance;
     font-variation-settings:"opsz" 36;
   }
@@ -1365,7 +1365,7 @@
     </div>
     <div class="brand">
       <div class="mark">Me<em>Dea</em></div>
-      <span class="tagline">News worth reading</span>
+      <span class="tagline">Signal intelligence. Daily.</span>
     </div>
     <div class="masthead-rule"></div>
     <div class="masthead-strip">
@@ -1383,7 +1383,7 @@
 
   <div class="submast">
     <div class="left">
-      <strong>The signal report</strong> &nbsp;·&nbsp; A daily filter on {{ sources|length }} newsrooms
+      <strong>The signal report</strong> &nbsp;·&nbsp; {{ sources|length }} newsrooms · every 30 minutes
       {% set live_count = sources.values() | rejectattr('error') | list | length %}
       <span class="signal-strength" title="{{ live_count }}/{{ sources|length }} sources live">
         {% for i in range(4) %}
@@ -1444,10 +1444,10 @@
   <!-- ───── Lede ───── -->
   <section class="lede">
     <div>
-      <div class="kicker">Today's signal · <em>{% if score is not none %}{% if score >= 60 %}Worth your time{% elif score >= 40 %}A mixed bag{% else %}Heavy load{% endif %}{% else %}Reading the room{% endif %}</em></div>
+      <div class="kicker">Today's signal · <em>{% if score is not none %}{% if score >= 60 %}Signal clear{% elif score >= 40 %}Signal mixed{% else %}Signal suppressed{% endif %}{% else %}Reading the room{% endif %}</em></div>
       {% if score is not none %}
       <h1>
-        About <span class="figure {% if score_class == 'dial-good' %}{% elif score_class == 'dial-neutral' %}neutral{% else %}bad{% endif %}">{{ score }} in 100</span> headlines we read today are worth your attention — the rest is noise we've set aside.
+        <span class="figure {% if score_class == 'dial-good' %}{% elif score_class == 'dial-neutral' %}neutral{% else %}bad{% endif %}">{{ score }} of every 100</span> headlines we read today passed the signal test — the rest is noise.
       </h1>
       {% else %}
       <h1>We're <span class="figure">listening</span> to the world's newsrooms. The signal report is on its way.</h1>
@@ -1489,7 +1489,7 @@
     <div>
       <div class="section-head">
         <h2 class="ttl">Worth <em>reading</em></h2>
-        <span class="meta">{{ pro|length }} of {{ pro_count }} scored</span>
+        <span class="meta">{{ pro|length }} of {{ pro_count }} surfaced</span>
       </div>
 
       {% if pro %}
@@ -1532,7 +1532,7 @@
           {% endfor %}
         </div>
       {% else %}
-        <p class="empty">Nothing positive surfaced in this cycle. We'll keep reading.</p>
+        <p class="empty">Nothing passed the signal test this cycle. Back shortly.</p>
       {% endif %}
     </div>
 
@@ -1673,8 +1673,8 @@
       {% if opinion or admin %}
       <section class="os-section aside-os">
         <div class="section-head">
-          <h2 class="ttl"><em>OS</em> — OpinionSays</h2>
-          <span class="meta"><a href="https://the-architect-neo.github.io/" target="_blank" rel="noopener" style="color:inherit;border-bottom:1px solid currentColor;padding-bottom:1px">The Architect</a> speaks</span>
+          <h2 class="ttl">The <em>Editor</em></h2>
+          <span class="meta">OpinionSays &middot; <a href="https://the-architect-neo.github.io/" target="_blank" rel="noopener" style="color:inherit;border-bottom:1px solid currentColor;padding-bottom:1px">The Architect</a></span>
         </div>
         <div class="os-card" id="os-card">
           {% if admin %}
@@ -1787,7 +1787,7 @@
       {% endfor %}
     </div>
     {% else %}
-    <p class="geo-none">No regional stories in this cycle. Global feed covering you.</p>
+    <p class="geo-none">Global feed active. No regional stories this cycle.</p>
     {% endif %}
   </section>
   {% endif %}
@@ -1796,10 +1796,10 @@
   <div class="below-stories">
     <div class="filtered-strip">
       <div class="head">
-        <h3>What we filtered out</h3>
+        <h3>The noise</h3>
         <span class="meta">{{ con|length }} of {{ con_count }}</span>
       </div>
-      <p class="intro">Negative, alarmist, or doom-coded coverage we set aside so it didn't crowd the rest.</p>
+      <p class="intro">Negative, alarmist, or doom-coded. We read it. We set it aside.</p>
       <div class="story-list">
         {% if con %}
           {% for h in con %}
@@ -1823,7 +1823,7 @@
           </article>
           {% endfor %}
         {% else %}
-          <p class="empty">A quiet cycle. Nothing filtered.</p>
+          <p class="empty">Nothing filtered this cycle.</p>
         {% endif %}
       </div>
     </div>
@@ -1831,7 +1831,7 @@
     <div class="below-right">
       <div class="flagged-strip">
         <div class="head">
-          <h3>Held for your judgement</h3>
+          <h3>Under review</h3>
           <span class="meta" style="font-family:var(--sans);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);font-weight:600">{{ flagged|length }} of {{ flagged_count }}</span>
         </div>
         <p class="intro">Positive score, negative context. We didn't force these into the green.</p>
@@ -1858,7 +1858,7 @@
             </article>
             {% endfor %}
           {% else %}
-            <p class="empty">Nothing ambiguous this round.</p>
+            <p class="empty">Nothing held this cycle.</p>
           {% endif %}
         </div>
       </div>
@@ -1872,7 +1872,7 @@
   <div id="shoutout">
     <div class="shoutout-section">
       <div class="shoutout-label">Direct line to the editor</div>
-      <p class="shoutout-pitch">Got a story tip, a correction, a thought? Send it direct. Every message is read personally by The Architect.</p>
+      <p class="shoutout-pitch">A tip, a correction, a challenge. Send it. The editor reads every message.</p>
       {% if stripe_live %}
       <div class="shoutout-form" id="shoutout-form">
         <div class="shoutout-row">
@@ -1944,7 +1944,7 @@
       </label>
       <button class="btn sb-btn" id="signup-btn" onclick="submitSubscribe()" type="button">Join →</button>
     </div>
-    <div class="sb-done" id="signup-done" style="display:none">You're on the list.</div>
+    <div class="sb-done" id="signup-done" style="display:none">Confirmed.</div>
   </div>
 
   {{ ad_slot(ad_mid, 'mid', ad_mid_list) }}
@@ -1953,15 +1953,15 @@
   <section class="sources">
     <div class="section-head">
       <button class="sources-toggle" id="sources-toggle" onclick="toggleSources()" aria-expanded="false" aria-controls="sources-body" type="button">
-        Where we <em>&nbsp;read from</em> <span class="toggle-arrow">▼</span>
+        Sources <span class="toggle-arrow">▼</span>
       </button>
-      <span class="meta">{{ sources|length }} newsrooms · this cycle</span>
+      <span class="meta">{{ sources|length }} newsrooms</span>
     </div>
     <div class="sources-body collapsed" id="sources-body">
     <p style="font-family:var(--serif);font-size:15px;font-weight:300;font-style:italic;color:var(--ink-2);line-height:1.55;margin:12px 0 20px;max-width:72ch;font-variation-settings:'opsz' 16">
-      Every 30 minutes we pull headlines from {{ sources|length }} independent newsrooms across six continents.
-      Green is positive, red filtered out, amber held for judgement.
-      The bias label reflects editorial position. Sources offline are rechecked next cycle.
+      Every 30 minutes we read {{ sources|length }} newsrooms across six continents.
+      Green is signal — worth reading. Red is noise — set aside. Amber is held — positive score, negative context.
+      Bias labels reflect editorial position. Offline sources are rechecked each cycle.
     </p>
     <div class="sources-grid">
       {% for name, s in sources.items() %}
