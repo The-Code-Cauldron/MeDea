@@ -1757,7 +1757,7 @@ def api_analytics():
                     readers AS (
                         SELECT COUNT(DISTINCT ip_hash) AS cnt
                         FROM page_views
-                        WHERE visited_at >= NOW()-INTERVAL '10 minutes'
+                        WHERE visited_at >= NOW()-INTERVAL '30 minutes'
                     ),
                     sc AS (
                         SELECT COUNT(*) FILTER (WHERE clicked_at >= CURRENT_DATE) AS today
@@ -1820,6 +1820,85 @@ def api_analytics():
         })
     except Exception as exc:
         log.error(f'analytics: {exc}')
+        return jsonify({'error': str(exc)}), 500
+
+
+# ── Analytics dashboard endpoints ────────────────────────────────────────────
+
+@app.route('/analytics')
+def analytics_dashboard():
+    if not session.get('admin'):
+        return redirect(url_for('login'))
+    return render_template('analytics.html')
+
+
+@app.route('/api/analytics/traffic')
+def api_analytics_traffic():
+    """Daily page views for the last N days — for trend chart."""
+    if not session.get('admin'):
+        return jsonify({'error': 'Forbidden'}), 403
+    if not _DB_URL:
+        return jsonify({'days': []})
+    days = min(int(request.args.get('days', 30)), 90)
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT
+                        DATE(visited_at AT TIME ZONE 'UTC')          AS day,
+                        COUNT(DISTINCT ip_hash)                       AS unique_visitors,
+                        COUNT(*) FILTER (WHERE device = 'mobile')    AS mobile,
+                        COUNT(*) FILTER (WHERE device = 'desktop')   AS desktop
+                    FROM page_views
+                    WHERE visited_at >= NOW() - (%s || ' days')::INTERVAL
+                    GROUP BY day
+                    ORDER BY day ASC
+                """, (str(days),))
+                rows = cur.fetchall()
+        return jsonify({'days': [
+            {'date': str(r[0]), 'visitors': r[1], 'mobile': r[2], 'desktop': r[3]}
+            for r in rows
+        ]})
+    except Exception as exc:
+        log.error(f'analytics/traffic: {exc}')
+        return jsonify({'error': str(exc)}), 500
+
+
+@app.route('/api/analytics/clicks')
+def api_analytics_clicks():
+    """Top clicked story URLs with counts — for content performance."""
+    if not session.get('admin'):
+        return jsonify({'error': 'Forbidden'}), 403
+    if not _DB_URL:
+        return jsonify({'topics': [], 'sources': []})
+    days = min(int(request.args.get('days', 7)), 30)
+    try:
+        with _db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT topic, SUM(cnt) AS total
+                    FROM (
+                        SELECT topic, COUNT(*) AS cnt
+                        FROM story_clicks
+                        WHERE clicked_at >= NOW() - (%s || ' days')::INTERVAL
+                        GROUP BY topic
+                    ) t
+                    GROUP BY topic ORDER BY total DESC LIMIT 10
+                """, (str(days),))
+                topics = [{'topic': r[0], 'clicks': r[1]} for r in cur.fetchall()]
+
+                cur.execute("""
+                    SELECT source, COUNT(*) AS cnt
+                    FROM story_clicks
+                    WHERE clicked_at >= NOW() - (%s || ' days')::INTERVAL
+                      AND source <> ''
+                    GROUP BY source ORDER BY cnt DESC LIMIT 10
+                """, (str(days),))
+                sources = [{'source': r[0], 'clicks': r[1]} for r in cur.fetchall()]
+
+        return jsonify({'topics': topics, 'sources': sources, 'days': days})
+    except Exception as exc:
+        log.error(f'analytics/clicks: {exc}')
         return jsonify({'error': str(exc)}), 500
 
 

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeDea — Analytics</title>
+<style>
+:root{
+  --bg:#060c14;--bg2:#0a1422;--bg3:#0f1c2e;--border:#1e2e42;
+  --gold:#c9a84c;--blue:#60a5fa;--green:#10b981;--red:#ef4444;--amber:#f59e0b;
+  --text:#e2e8f0;--sub:#64748b;--mono:'Courier New',monospace;
+  --sans:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;}
+
+/* ── NAV ── */
+nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;height:48px;gap:16px;position:sticky;top:0;z-index:50;}
+.nav-brand{font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--gold);letter-spacing:.06em;}
+.nav-sub{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);}
+.sp{flex:1;}
+.nav-live{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--sub);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.nav-back{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);text-decoration:none;border:1px solid var(--border);padding:4px 10px;transition:color .15s,border-color .15s;}
+.nav-back:hover{color:var(--gold);border-color:var(--gold);}
+.refresh-btn{background:transparent;border:1px solid var(--border);color:var(--sub);font-family:var(--sans);font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;cursor:pointer;transition:color .15s,border-color .15s;}
+.refresh-btn:hover{color:var(--blue);border-color:var(--blue);}
+#last-update{font-size:.62rem;color:var(--sub);}
+
+/* ── LAYOUT ── */
+.dash{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;grid-template-rows:auto;gap:1px;background:var(--border);min-height:calc(100vh - 48px);}
+
+/* ── STAT CELLS ── */
+.stat-cell{background:var(--bg2);padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between;}
+.stat-label{font-size:.58rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--sub);margin-bottom:8px;}
+.stat-val{font-family:var(--mono);font-size:2.2rem;font-weight:700;line-height:1;color:var(--text);}
+.stat-sub{font-size:.7rem;color:var(--sub);margin-top:6px;}
+.stat-val.green{color:var(--green);}
+.stat-val.amber{color:var(--amber);}
+.stat-val.blue{color:var(--blue);}
+.stat-val.gold{color:var(--gold);}
+.stat-delta{font-size:.7rem;font-weight:600;margin-top:4px;}
+.delta-up{color:var(--green);}
+.delta-flat{color:var(--sub);}
+
+/* ── WIDE CELLS ── */
+.cell-2{grid-column:span 2;}
+.cell-3{grid-column:span 3;}
+.cell-4{grid-column:span 4;}
+
+/* ── TABLE CELLS ── */
+.table-cell{background:var(--bg2);padding:0;overflow:hidden;}
+.cell-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.ch-title{font-size:.62rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--sub);}
+.ch-meta{font-size:.62rem;color:var(--sub);}
+table{width:100%;border-collapse:collapse;}
+thead th{font-size:.58rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg3);}
+tbody tr{border-bottom:1px solid var(--border);}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--bg3);}
+tbody td{padding:9px 16px;font-size:.8rem;color:var(--text);}
+tbody td.mono{font-family:var(--mono);font-size:.75rem;}
+tbody td.muted{color:var(--sub);}
+.bar-wrap{display:flex;align-items:center;gap:8px;}
+.bar-bg{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:2px;background:var(--blue);}
+.bar-val{font-family:var(--mono);font-size:.72rem;color:var(--sub);min-width:24px;text-align:right;}
+
+/* ── TRAFFIC CHART ── */
+.chart-cell{background:var(--bg2);padding:0;overflow:hidden;}
+.chart-inner{padding:12px 16px;height:100%;display:flex;flex-direction:column;}
+.chart-bars{flex:1;display:flex;align-items:flex-end;gap:2px;min-height:80px;padding-bottom:4px;}
+.chart-bar{flex:1;border-radius:1px 1px 0 0;background:var(--blue);opacity:.7;min-width:3px;transition:opacity .15s;}
+.chart-bar:hover{opacity:1;}
+.chart-bar.today{background:var(--gold);opacity:1;}
+.chart-dates{display:flex;justify-content:space-between;font-size:.58rem;color:var(--sub);margin-top:4px;}
+
+/* ── CPM PROJECTIONS ── */
+.proj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);}
+.proj-cell{background:var(--bg3);padding:12px 14px;text-align:center;}
+.proj-visitors{font-family:var(--mono);font-size:.72rem;color:var(--sub);margin-bottom:4px;}
+.proj-revenue{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--gold);}
+.proj-year{font-size:.62rem;color:var(--sub);margin-top:2px;}
+
+/* ── SCORE HISTORY ── */
+.score-row{display:flex;align-items:center;gap:8px;padding:7px 16px;border-bottom:1px solid var(--border);}
+.score-row:last-child{border-bottom:none;}
+.score-ts{font-family:var(--mono);font-size:.68rem;color:var(--sub);min-width:90px;}
+.score-num{font-family:var(--mono);font-size:.88rem;font-weight:700;min-width:32px;text-align:right;}
+.score-bar-wrap{flex:1;}
+.score-bar-bg{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.score-bar-fill{height:100%;border-radius:2px;}
+
+/* ── EMPTY STATE ── */
+.empty{padding:24px 16px;text-align:center;color:var(--sub);font-size:.8rem;font-style:italic;}
+
+/* ── ACTION BAR ── */
+.action-bar{background:var(--bg2);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:8px;align-items:center;font-size:.72rem;color:var(--sub);}
+.action-item{display:flex;align-items:center;gap:6px;}
+.action-dot{width:6px;height:6px;border-radius:50%;}
+
+@media(max-width:900px){
+  .dash{grid-template-columns:1fr 1fr;}
+  .cell-3,.cell-4{grid-column:span 2;}
+}
+@media(max-width:600px){
+  .dash{grid-template-columns:1fr;}
+  .cell-2,.cell-3,.cell-4{grid-column:span 1;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">MeDea</div>
+  <div class="nav-sub">Analytics</div>
+  <div class="nav-live"><div class="live-dot"></div>Live · refreshes every 30s</div>
+  <div class="sp"></div>
+  <span id="last-update"></span>
+  <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+  <a href="/" class="nav-back">← Dashboard</a>
+</nav>
+
+<div class="dash" id="dash">
+
+  <!-- ROW 1: Top stats -->
+  <div class="stat-cell" id="s-visitors-today">
+    <div class="stat-label">Page Views Today</div>
+    <div class="stat-val blue" id="v-today">—</div>
+    <div class="stat-sub" id="v-device-split">— mobile / — desktop</div>
+  </div>
+
+  <div class="stat-cell">
+    <div class="stat-label">Visitors This Week</div>
+    <div class="stat-val" id="v-week">—</div>
+    <div class="stat-sub" id="v-week-sub">7-day unique visitors</div>
+  </div>
+
+  <div class="stat-cell">
+    <div class="stat-label">Readers Now</div>
+    <div class="stat-val green" id="v-now">—</div>
+    <div class="stat-sub">active last 30 min</div>
+  </div>
+
+  <div class="stat-cell">
+    <div class="stat-label">ProCon Score</div>
+    <div class="stat-val gold" id="v-score">—</div>
+    <div class="stat-sub" id="v-score-sub">signal quality</div>
+  </div>
+
+  <!-- ROW 2: Clicks + Revenue -->
+  <div class="stat-cell">
+    <div class="stat-label">Story Clicks Today</div>
+    <div class="stat-val amber" id="v-clicks">—</div>
+    <div class="stat-sub" id="v-ctr">—% CTR</div>
+  </div>
+
+  <div class="stat-cell">
+    <div class="stat-label">Impressions Today</div>
+    <div class="stat-val" id="v-imp">—</div>
+    <div class="stat-sub" id="v-imp-type">page views base</div>
+  </div>
+
+  <div class="stat-cell">
+    <div class="stat-label">Revenue Today</div>
+    <div class="stat-val gold" id="v-rev">—</div>
+    <div class="stat-sub" id="v-cpm-rate">@ £5 CPM</div>
+  </div>
+
+  <div class="stat-cell">
+    <div class="stat-label">Revenue This Week</div>
+    <div class="stat-val" id="v-rev-week">—</div>
+    <div class="stat-sub" id="v-sources">— / — sources live</div>
+  </div>
+
+  <!-- ROW 3: Traffic chart (full width) -->
+  <div class="chart-cell cell-4">
+    <div class="chart-inner">
+      <div class="cell-header" style="padding:0 0 10px;">
+        <span class="ch-title">Daily Traffic — 30 Days</span>
+        <span class="ch-meta" id="chart-meta"></span>
+      </div>
+      <div class="chart-bars" id="traffic-chart"></div>
+      <div class="chart-dates" id="chart-dates"></div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Topics + Sources -->
+  <div class="table-cell cell-2">
+    <div class="cell-header">
+      <span class="ch-title">Top Topics — Clicks (7d)</span>
+      <span class="ch-meta" id="topic-meta"></span>
+    </div>
+    <div id="topic-table"><div class="empty">No click data yet.</div></div>
+  </div>
+
+  <div class="table-cell cell-2">
+    <div class="cell-header">
+      <span class="ch-title">Top Sources — Clicks (7d)</span>
+      <span class="ch-meta"></span>
+    </div>
+    <div id="source-table"><div class="empty">No click data yet.</div></div>
+  </div>
+
+  <!-- ROW 5: Score history + CPM projections -->
+  <div class="table-cell cell-2">
+    <div class="cell-header">
+      <span class="ch-title">Score History</span>
+      <span class="ch-meta">Last 10 readings</span>
+    </div>
+    <div id="score-history"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div class="stat-cell cell-2" style="padding:0;">
+    <div class="cell-header">
+      <span class="ch-title">Revenue Projections @ £5 CPM</span>
+      <span class="ch-meta">Annual estimate</span>
+    </div>
+    <div class="proj-grid" id="proj-grid">
+      <div class="proj-cell"><div class="proj-visitors">1k/day</div><div class="proj-revenue">£1,825</div><div class="proj-year">per year</div></div>
+      <div class="proj-cell"><div class="proj-visitors">5k/day</div><div class="proj-revenue">£9,125</div><div class="proj-year">per year</div></div>
+      <div class="proj-cell"><div class="proj-visitors">10k/day</div><div class="proj-revenue">£18,250</div><div class="proj-year">per year</div></div>
+      <div class="proj-cell"><div class="proj-visitors">50k/day</div><div class="proj-revenue">£91,250</div><div class="proj-year">per year</div></div>
+    </div>
+    <div style="padding:12px 16px;font-size:.72rem;color:var(--sub);line-height:1.7;border-top:1px solid var(--border);">
+      Current trajectory: <strong id="proj-current" style="color:var(--gold);">calculating…</strong><br>
+      Growth needed for £10k/yr: <strong id="proj-target" style="color:var(--blue);">calculating…</strong>
+    </div>
+  </div>
+
+  <!-- ACTION BAR -->
+  <div class="action-bar cell-4">
+    <span>Marketing signals:</span>
+    <div class="action-item"><div class="action-dot" style="background:var(--green)"></div><span id="act-traffic"></span></div>
+    <div class="action-item"><div class="action-dot" style="background:var(--amber)"></div><span id="act-ctr"></span></div>
+    <div class="action-item"><div class="action-dot" style="background:var(--blue)"></div><span id="act-revenue"></span></div>
+    <div class="sp"></div>
+    <span id="act-sources"></span>
+  </div>
+
+</div>
+
+<script>
+let _data = {};
+
+async function loadAll(){
+  const [core, traffic, clicks, history] = await Promise.all([
+    fetch('/api/analytics').then(r=>r.json()).catch(()=>({})),
+    fetch('/api/analytics/traffic?days=30').then(r=>r.json()).catch(()=>({days:[]})),
+    fetch('/api/analytics/clicks?days=7').then(r=>r.json()).catch(()=>({topics:[],sources:[]})),
+    fetch('/api/score/history').then(r=>r.json()).catch(()=>([]))
+  ]);
+  _data = {core, traffic, clicks, history};
+  render();
+  document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function fmt(n){ return (n||0).toLocaleString(); }
+function fmtPct(n,d){ return ((n||0)/Math.max(d,1)*100).toFixed(1)+'%'; }
+function fmtGbp(n){ return n===0?'£0.00':'£'+(n||0).toFixed(4); }
+
+function render(){
+  const d = _data.core || {};
+  const vis   = d.visitors_today  || 0;
+  const visW  = d.visitors_week   || 0;
+  const imp   = d.cpm_base_today  || vis;
+  const clicks= d.clicks_today    || 0;
+  const now   = d.readers_now     || 0;
+  const cpm   = d.cpm_rate        || 5;
+  const revD  = d.est_revenue_today|| 0;
+  const revW  = d.est_revenue_week || 0;
+  const sl    = d.sources_live    || 0;
+  const st    = d.sources_total   || 0;
+
+  set('v-today',   fmt(vis));
+  set('v-week',    fmt(visW));
+  set('v-now',     fmt(now));
+  set('v-score',   d.score != null ? d.score : '—');
+  set('v-score-sub', d.score != null ? (d.score>=60?'Signal clear':d.score>=40?'Signal mixed':'Signal suppressed') : 'awaiting signal');
+  set('v-clicks',  fmt(clicks));
+  set('v-ctr',     fmtPct(clicks,imp)+' CTR');
+  set('v-imp',     fmt(imp));
+  set('v-imp-type',d.ads_live?'ad impressions':'page views (no ads)');
+  set('v-rev',     fmtGbp(revD));
+  set('v-cpm-rate','@ £'+cpm+' CPM');
+  set('v-rev-week',fmtGbp(revW));
+  set('v-sources', sl+'/'+st+' sources live');
+  set('v-device-split', fmt(d.imp_today||0)+' impressions / '+sl+' feeds live');
+
+  // Traffic chart
+  const days = (_data.traffic||{}).days || [];
+  renderChart(days);
+
+  // Topics
+  const topics = (_data.clicks||{}).topics || [];
+  renderTopics(topics);
+
+  // Sources
+  const sources = (_data.clicks||{}).sources || [];
+  renderSources(sources);
+
+  // Score history
+  renderHistory(_data.history || []);
+
+  // Projections
+  const dailyRate = vis;
+  const annualRev = (dailyRate / 1000 * cpm * 365);
+  set('proj-current', dailyRate>0 ? '£'+annualRev.toFixed(0)+'/yr at current traffic' : 'No traffic data yet');
+  const needed10k = Math.ceil((10000 / (cpm * 365)) * 1000);
+  set('proj-target', fmt(needed10k)+' visitors/day');
+
+  // Action signals
+  set('act-traffic', vis>0 ? fmt(vis)+' visitors today' : 'No traffic yet — check MeDea ad is running');
+  set('act-ctr',     clicks>0 ? clicks+' clicks · '+fmtPct(clicks,imp)+' CTR — content is engaging' : 'Zero clicks — verify click tracking is active');
+  set('act-revenue', revD>0 ? fmtGbp(revD)+' today · £'+fmtGbp(revW)+' week' : 'No revenue yet — grow traffic or add paid ads');
+  set('act-sources', sl+'/'+st+' sources feeding the score');
+}
+
+function set(id, val){
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function renderChart(days){
+  const el = document.getElementById('traffic-chart');
+  const dl = document.getElementById('chart-dates');
+  const meta = document.getElementById('chart-meta');
+  if (!days.length){ el.innerHTML='<div class="empty">No traffic data.</div>'; return; }
+  const max = Math.max(...days.map(d=>d.visitors), 1);
+  const total = days.reduce((a,d)=>a+d.visitors,0);
+  meta.textContent = fmt(total)+' total visitors';
+  el.innerHTML = days.map((d,i)=>{
+    const h = Math.max(4, Math.round((d.visitors/max)*100));
+    const isToday = i === days.length-1;
+    return `<div class="chart-bar${isToday?' today':''}" style="height:${h}%" title="${d.date}: ${fmt(d.visitors)} visitors"></div>`;
+  }).join('');
+  if (days.length >= 2){
+    dl.innerHTML = `<span>${days[0].date.slice(5)}</span><span>${days[days.length-1].date.slice(5)}</span>`;
+  }
+}
+
+function renderTopics(topics){
+  const el = document.getElementById('topic-table');
+  const meta = document.getElementById('topic-meta');
+  if (!topics.length){ el.innerHTML='<div class="empty">No click data yet. Clicks will appear here as readers engage.</div>'; return; }
+  const max = Math.max(...topics.map(t=>t.clicks), 1);
+  meta.textContent = topics.reduce((a,t)=>a+t.clicks,0)+' total';
+  el.innerHTML = `<table><thead><tr><th>Topic</th><th>Clicks</th><th>Share</th></tr></thead><tbody>`
+    + topics.map(t=>`<tr>
+        <td>${esc(t.topic)}</td>
+        <td class="mono">${t.clicks}</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.round(t.clicks/max*100)}%"></div></div><span class="bar-val">${fmtPct(t.clicks,max)}</span></div></td>
+      </tr>`).join('')
+    + '</tbody></table>';
+}
+
+function renderSources(sources){
+  const el = document.getElementById('source-table');
+  if (!sources.length){ el.innerHTML='<div class="empty">No source click data yet.</div>'; return; }
+  const max = Math.max(...sources.map(s=>s.clicks), 1);
+  el.innerHTML = `<table><thead><tr><th>Source</th><th>Clicks</th><th>Share</th></tr></thead><tbody>`
+    + sources.map(s=>`<tr>
+        <td>${esc(s.source)}</td>
+        <td class="mono">${s.clicks}</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.round(s.clicks/max*100)}%"></div></div><span class="bar-val">${fmtPct(s.clicks,max)}</span></div></td>
+      </tr>`).join('')
+    + '</tbody></table>';
+}
+
+function renderHistory(history){
+  const el = document.getElementById('score-history');
+  const items = Array.isArray(history) ? history.slice(-10).reverse() : [];
+  if (!items.length){ el.innerHTML='<div class="empty">No score history.</div>'; return; }
+  el.innerHTML = items.map(h=>{
+    const score = h.score != null ? h.score : '—';
+    const col   = score>=60?'var(--green)':score>=40?'var(--amber)':'var(--red)';
+    const w     = score != '—' ? Math.round(score) : 0;
+    const ts    = h.recorded_at ? new Date(h.recorded_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
+    return `<div class="score-row">
+      <span class="score-ts">${ts}</span>
+      <span class="score-num" style="color:${col}">${score}</span>
+      <div class="score-bar-wrap"><div class="score-bar-bg"><div class="score-bar-fill" style="width:${w}%;background:${col}"></div></div></div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Boot
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>

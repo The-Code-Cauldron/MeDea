@@ -2520,17 +2520,21 @@
 
   /* ───── Intelligence layer ───── */
 
-  // Story click tracking — fires on every story link click
-  (function initClickTracking(){
-    document.querySelectorAll('.story .title a, .feature h2 a, .dispatch-title a, .geo-card .gc-title a').forEach(function(a){
-      a.addEventListener('click', function(){
-        const topic  = (this.closest('[data-topic]') || {}).dataset?.topic || 'General';
-        const source = (this.closest('.story,.feature,.dispatch-item,.geo-card')?.querySelector('.src,.gc-src') || {}).textContent || '';
-        fetch('/api/click',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({url:this.href, topic, source}),keepalive:true}).catch(()=>{});
-      });
-    });
-  })();
+  // Story click tracking — event delegation captures static AND dynamic links
+  document.addEventListener('click', function(e){
+    const a = e.target.closest('.story .title a, .feature h2 a, .dispatch-title a, .geo-card .gc-title a');
+    if (!a || !a.href) return;
+    const topic  = (a.closest('[data-topic]') || {}).dataset?.topic || 'General';
+    const source = (a.closest('.story,.feature,.dispatch-item,.geo-card')?.querySelector('.src,.gc-src') || {}).textContent?.trim() || '';
+    const payload = JSON.stringify({url: a.href, topic, source});
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/click', new Blob([payload], {type:'application/json'}));
+      } else {
+        fetch('/api/click', {method:'POST', headers:{'Content-Type':'application/json'}, body:payload, keepalive:true}).catch(()=>{});
+      }
+    } catch(_){}
+  });
 
   // Analytics polling — admin only, updates every 30 seconds
   const IS_ADMIN = {{ admin|tojson }};
