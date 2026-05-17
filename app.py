@@ -572,6 +572,7 @@ def _db_conn():
         finally:
             _pool.putconn(conn)
     else:
+        log.warning('DB pool not ready — falling back to direct connect')
         conn = psycopg2.connect(_DB_URL)
         try:
             yield conn
