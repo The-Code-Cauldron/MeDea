@@ -1741,21 +1741,41 @@ def api_analytics():
                     WHERE visited_at >= NOW() - INTERVAL '10 minutes'
                 """)
                 readers_now = cur.fetchone()[0]
+                # Page views today / week — used as CPM base when no paid ads are live
+                cur.execute("""
+                    SELECT
+                        COUNT(*) FILTER (WHERE visited_at >= CURRENT_DATE)               AS today,
+                        COUNT(*) FILTER (WHERE visited_at >= NOW() - INTERVAL '7 days')  AS week
+                    FROM page_views
+                """)
+                pv = cur.fetchone()
+                visitors_today, visitors_week = (pv[0] or 0), (pv[1] or 0)
                 # Active sources this cycle
                 with _lock:
                     sources_live = sum(1 for s in _state['sources'].values() if not s.get('error'))
                     sources_total = len(_state['sources'])
+        # Effective impression base: use ad impressions when live, page views when not
+        cpm_base_today = imp_today if imp_today > 0 else visitors_today
+        cpm_base_week  = imp_week  if imp_week  > 0 else visitors_week
+        cpm_rate = 5  # £5 base CPM
         return jsonify({
-            'imp_today':    imp_today,
-            'imp_week':     imp_week,
-            'clicks_today': clicks_today,
-            'readers_now':  readers_now,
-            'sources_live': sources_live,
-            'sources_total': sources_total,
+            'imp_today':        imp_today,
+            'imp_week':         imp_week,
+            'visitors_today':   visitors_today,
+            'visitors_week':    visitors_week,
+            'cpm_base_today':   cpm_base_today,
+            'cpm_base_week':    cpm_base_week,
+            'clicks_today':     clicks_today,
+            'readers_now':      readers_now,
+            'sources_live':     sources_live,
+            'sources_total':    sources_total,
             'top_ad':    {'name': top_ad[0], 'slot': top_ad[1], 'count': top_ad[2]} if top_ad else None,
             'top_topic': {'topic': top_topic[0], 'count': top_topic[1]} if top_topic else None,
-            'score':     _state.get('score'),
-            'est_revenue_today': round(imp_today / 1000 * 5, 2),  # £5 CPM estimate
+            'score':            _state.get('score'),
+            'cpm_rate':         cpm_rate,
+            'est_revenue_today': round(cpm_base_today / 1000 * cpm_rate, 4),
+            'est_revenue_week':  round(cpm_base_week  / 1000 * cpm_rate, 4),
+            'ads_live':         imp_today > 0,
         })
     except Exception as exc:
         log.error(f'analytics: {exc}')

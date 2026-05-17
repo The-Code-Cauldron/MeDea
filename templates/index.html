@@ -1465,13 +1465,13 @@
   <div class="analytics-panel" id="analytics-panel">
     <div class="an-cell">
       <div class="an-val" id="an-impressions">—</div>
-      <div class="an-label">Impressions today</div>
+      <div class="an-label" id="an-imp-label">Page views today</div>
       <div class="an-sub an-revenue" id="an-revenue">—</div>
     </div>
     <div class="an-cell">
       <div class="an-val" id="an-clicks">—</div>
       <div class="an-label">Story clicks today</div>
-      <div class="an-sub" id="an-top-topic">—</div>
+      <div class="an-sub" id="an-ctr">—</div>
     </div>
     <div class="an-cell">
       <div class="an-val" id="an-now">—</div>
@@ -1485,7 +1485,7 @@
     </div>
     <div class="an-cell" style="border-right:none">
       <div class="an-val" id="an-imp-week">—</div>
-      <div class="an-label">Impressions week</div>
+      <div class="an-label" id="an-week-label">Page views week</div>
       <div class="an-sub" id="an-est-cpm">est. @ £5 CPM</div>
     </div>
   </div>
@@ -2470,17 +2470,43 @@
           el.textContent = val;
           if (prev !== String(val)){ el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1200); }
         }
-        flash('an-impressions', (d.imp_today||0).toLocaleString());
-        flash('an-imp-week',    (d.imp_week||0).toLocaleString());
+        // Effective impressions: ad impressions when live, page views otherwise
+        const adsLive   = d.ads_live || false;
+        const effToday  = d.cpm_base_today || d.visitors_today || 0;
+        const effWeek   = d.cpm_base_week  || d.visitors_week  || 0;
+        const cpm       = d.cpm_rate || 5;
+
+        // Labels: distinguish ad impressions from page views
+        const impLabel = document.getElementById('an-imp-label');
+        const wkLabel  = document.getElementById('an-week-label');
+        if (impLabel) impLabel.textContent = adsLive ? 'Impressions today' : 'Page views today';
+        if (wkLabel)  wkLabel.textContent  = adsLive ? 'Impressions week'  : 'Page views week';
+
+        flash('an-impressions', effToday.toLocaleString());
+        flash('an-imp-week',    effWeek.toLocaleString());
         flash('an-clicks',      (d.clicks_today||0).toLocaleString());
         flash('an-now',         d.readers_now||0);
         flash('an-sources',     (d.sources_live||0) + '/' + (d.sources_total||0));
+
+        // Revenue — wired up and calculated properly
+        const revToday = effToday > 0 ? (effToday / 1000 * cpm).toFixed(4) : null;
+        const revWeek  = effWeek  > 0 ? (effWeek  / 1000 * cpm).toFixed(4) : null;
         const rev = document.getElementById('an-revenue');
-        if (rev) rev.textContent = d.est_revenue_today ? '~£' + d.est_revenue_today + ' today' : '—';
+        if (rev) rev.textContent = revToday ? '~£' + revToday + ' today' : 'no traffic yet';
+
+        // CTR
+        const ctr    = effToday > 0 ? ((d.clicks_today||0) / effToday * 100).toFixed(2) : '0.00';
+        const ctrEl  = document.getElementById('an-ctr');
+        if (ctrEl) ctrEl.textContent = ctr + '% CTR';
+
+        // Week CPM estimate label
+        const cpmEl = document.getElementById('an-est-cpm');
+        if (cpmEl) cpmEl.textContent = revWeek ? '~£' + revWeek + ' @ £' + cpm + ' CPM' : 'est. @ £' + cpm + ' CPM';
+
         const tt = document.getElementById('an-top-topic');
-        if (tt && d.top_topic) tt.textContent = d.top_topic.topic + ' (' + d.top_topic.count + ')';
+        if (tt) tt.textContent = d.top_topic ? d.top_topic.topic + ' (' + d.top_topic.count + ')' : '—';
         const ta = document.getElementById('an-top-ad');
-        if (ta && d.top_ad) ta.textContent = d.top_ad.name + ' · ' + d.top_ad.count + ' imp';
+        if (ta) ta.textContent = d.top_ad ? d.top_ad.name + ' · ' + d.top_ad.count + ' imp' : 'no ads configured';
         // Animate ProCon score if changed
         if (d.score !== null && d.score !== undefined){
           const numEl = document.querySelector('.ratio .num');
