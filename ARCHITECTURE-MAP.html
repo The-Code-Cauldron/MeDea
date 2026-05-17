@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeDea — Architecture Map</title>
+<style>
+  :root{
+    --bg:#141310;--card:#1c1a15;--card2:#221f19;
+    --ink:#ece4d2;--ink2:#b8b09e;--ink3:#807a6c;--ink4:#534e44;
+    --rule:#2a2720;
+    --green:#7cc295;--green-d:#2a5f43;--green-bg:#1f3024;
+    --red:#d7836c;--red-bg:#3a2017;
+    --amber:#d9b25f;--amber-bg:#3a2c14;
+    --blue:#1a7fe8;--blue-bg:#0a1628;
+    --purple:#c1b2ef;--purple-bg:#2b2547;
+    --gold:#c9a84c;--gold-bg:#1a1208;
+    --inject:#e94560;--inject-bg:#2a0f15;
+    --serif:'Georgia','Times New Roman',serif;
+    --sans:system-ui,-apple-system,sans-serif;
+    --mono:'SF Mono','Consolas','Courier New',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh}
+
+  /* ── Header ── */
+  .hd{padding:20px 20px 0;border-bottom:1px solid var(--rule)}
+  .hd-brand{font-family:var(--serif);font-style:italic;font-size:28px;font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+  .hd-brand em{color:var(--green)}
+  .hd-sub{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3);margin-top:4px;margin-bottom:16px}
+
+  /* ── Tabs ── */
+  .tabs{display:flex;overflow-x:auto;gap:2px;padding:0 20px;background:var(--card2);border-bottom:1px solid var(--rule);scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{appearance:none;background:transparent;border:none;color:var(--ink3);font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;padding:12px 16px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;flex-shrink:0}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--green);border-bottom-color:var(--green)}
+
+  /* ── Tab panels ── */
+  .panel{display:none;padding:24px 20px 80px;max-width:960px;margin:0 auto}
+  .panel.active{display:block}
+
+  /* ── Section titles ── */
+  .sec-title{font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:700;color:var(--ink3);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+  h2{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--ink);margin-bottom:8px}
+  p.desc{font-size:14px;color:var(--ink2);line-height:1.6;margin-bottom:20px}
+
+  /* ── Flow boxes ── */
+  .flow{display:flex;flex-direction:column;gap:0;align-items:stretch}
+  .flow-row{display:flex;align-items:center;gap:12px}
+  .flow-box{
+    background:var(--card);border:1px solid var(--rule);
+    padding:14px 18px;flex:1;
+  }
+  .flow-box .fb-label{font-size:9px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+  .flow-box .fb-name{font-family:var(--mono);font-size:14px;font-weight:500}
+  .flow-box .fb-detail{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.5}
+  .flow-arrow{text-align:center;padding:6px 0;color:var(--ink4);font-size:18px;flex-shrink:0;align-self:center}
+  .flow-down{text-align:center;padding:4px 0;color:var(--ink4);font-size:16px}
+  .flow-branch{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+
+  /* colour variants */
+  .green .fb-label{color:var(--green)} .green{border-color:var(--green-d)!important;background:var(--green-bg)!important}
+  .red .fb-label{color:var(--red)} .red{border-color:#6b2e20!important;background:var(--red-bg)!important}
+  .amber .fb-label{color:var(--amber)} .amber{border-color:#6b4e1a!important;background:var(--amber-bg)!important}
+  .blue .fb-label{color:var(--blue)} .blue{border-color:#1a3a6b!important;background:var(--blue-bg)!important}
+  .purple .fb-label{color:var(--purple)} .purple{border-color:#4a3f7a!important;background:var(--purple-bg)!important}
+  .gold .fb-label{color:var(--gold)} .gold{border-color:#5a4a1a!important;background:var(--gold-bg)!important}
+  .inject-box .fb-label{color:var(--inject)} .inject-box{border-color:#6b1a28!important;background:var(--inject-bg)!important;border-style:dashed!important}
+
+  /* ── Cards grid ── */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--rule);padding:16px}
+  .card-label{font-size:9px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;color:var(--ink4);margin-bottom:6px}
+  .card-title{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--ink);margin-bottom:8px}
+  .card-body{font-size:12px;color:var(--ink2);line-height:1.6}
+  .card-body code{font-family:var(--mono);font-size:11px;background:var(--card2);padding:1px 5px;color:var(--green)}
+  .card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+  .tag{font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;padding:2px 7px;border-radius:2px}
+  .tag-green{background:var(--green-bg);color:var(--green)}
+  .tag-red{background:var(--red-bg);color:var(--red)}
+  .tag-amber{background:var(--amber-bg);color:var(--amber)}
+  .tag-blue{background:var(--blue-bg);color:var(--blue)}
+  .tag-purple{background:var(--purple-bg);color:var(--purple)}
+  .tag-inject{background:var(--inject-bg);color:var(--inject)}
+
+  /* ── API list ── */
+  .api-group{margin-bottom:28px}
+  .api-group-label{font-size:9px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;color:var(--ink4);margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed var(--rule)}
+  .api-row{display:grid;grid-template-columns:70px 200px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--rule);font-size:12px}
+  .api-method{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:2px;text-align:center;align-self:start}
+  .get{background:#1a3a6b;color:#7bb3ef}
+  .post{background:var(--green-bg);color:var(--green)}
+  .del{background:var(--red-bg);color:var(--red)}
+  .api-path{font-family:var(--mono);font-size:11px;color:var(--ink);word-break:break-all;line-height:1.5}
+  .api-desc{color:var(--ink2);line-height:1.5}
+  .api-auth{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--amber);white-space:nowrap}
+  .api-pub{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink4);white-space:nowrap}
+  @media(max-width:600px){
+    .api-row{grid-template-columns:55px 1fr;gap:6px}
+    .api-path{grid-column:1/-1;font-size:10px}
+    .api-desc{grid-column:1/-1}
+    .api-auth,.api-pub{display:none}
+  }
+
+  /* ── Page zone map ── */
+  .page-map{display:flex;flex-direction:column;gap:4px;font-size:11px}
+  .zone{background:var(--card);border:1px solid var(--rule);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:border-color .15s}
+  .zone:hover{border-color:var(--ink3)}
+  .zone.active-zone{border-color:var(--green)}
+  .zone-name{font-weight:600;color:var(--ink)}
+  .zone-class{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+  .zone-badge{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:2px 6px;border-radius:2px}
+  .zone-detail{background:var(--card2);border:1px solid var(--rule);border-top:none;padding:12px 14px;font-size:12px;color:var(--ink2);line-height:1.6;display:none}
+  .zone-detail.open{display:block}
+  .zone-detail code{font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 5px;color:var(--green)}
+
+  /* ── Inject callouts ── */
+  .inject-list{display:flex;flex-direction:column;gap:12px}
+  .inject-item{background:var(--inject-bg);border:1px dashed #6b1a28;padding:16px 18px}
+  .inject-item .i-where{font-family:var(--mono);font-size:11px;color:var(--inject);margin-bottom:6px;font-weight:700}
+  .inject-item .i-what{font-size:13px;color:var(--ink);font-weight:600;margin-bottom:4px}
+  .inject-item .i-detail{font-size:12px;color:var(--ink2);line-height:1.6}
+
+  /* ── Filter chain ── */
+  .filter-chain{display:flex;flex-direction:column;gap:8px}
+  .filter-step{background:var(--card);border-left:3px solid var(--rule);padding:12px 16px}
+  .filter-step .fs-num{font-family:var(--mono);font-size:11px;color:var(--ink4);margin-bottom:4px}
+  .filter-step .fs-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
+  .filter-step .fs-code{font-family:var(--mono);font-size:11px;background:var(--bg);padding:4px 10px;color:var(--amber);margin:6px 0;display:block;overflow-x:auto;white-space:nowrap}
+  .filter-step .fs-result{font-size:11px;color:var(--ink3);line-height:1.5}
+  .filter-step.exclude{border-left-color:var(--red)}
+  .filter-step.force{border-left-color:var(--amber)}
+  .filter-step.flag{border-left-color:var(--purple)}
+  .filter-step.pass{border-left-color:var(--green)}
+
+  @media(max-width:600px){
+    .flow-branch{grid-template-columns:1fr}
+    .hd-brand{font-size:22px}
+    .panel{padding:16px 14px 80px}
+  }
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="hd-brand">Me<em>Dea</em></div>
+  <div class="hd-sub">Architecture Map · Build reference · May 2026</div>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" onclick="showTab('pipeline')">Pipeline</button>
+  <button class="tab" onclick="showTab('filters')">Filters</button>
+  <button class="tab" onclick="showTab('database')">Database</button>
+  <button class="tab" onclick="showTab('api')">API</button>
+  <button class="tab" onclick="showTab('services')">Services</button>
+  <button class="tab" onclick="showTab('ads')">Ads</button>
+  <button class="tab" onclick="showTab('inject')">⚡ Inject</button>
+  <button class="tab" onclick="showTab('page')">Page</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════ PIPELINE -->
+<div class="panel active" id="tab-pipeline">
+  <div class="sec-title">30-minute data pipeline · app.py</div>
+  <div class="flow">
+
+    <div class="flow-box blue">
+      <div class="fb-label">Trigger</div>
+      <div class="fb-name">_loop() — REFRESH_INTERVAL = 1800s</div>
+      <div class="fb-detail">Runs in a daemon thread on startup. Also triggerable via POST /api/refresh (manual or admin button).</div>
+    </div>
+    <div class="flow-down">↓</div>
+
+    <div class="flow-box">
+      <div class="fb-label">Orchestrator</div>
+      <div class="fb-name">_fetch()</div>
+      <div class="fb-detail">Spawns 32 threads (one per FEED). Joins all within 25s timeout. Aggregates results.</div>
+    </div>
+    <div class="flow-down">↓ × 32 threads</div>
+
+    <div class="flow-box">
+      <div class="fb-label">Per-feed worker</div>
+      <div class="fb-name">_fetch_one(name, url, bias, results)</div>
+      <div class="fb-detail">Fetches RSS via requests. Parses with feedparser. Processes up to 25 entries per source.</div>
+    </div>
+    <div class="flow-down">↓ per headline</div>
+
+    <div class="flow-box amber">
+      <div class="fb-label">Sentiment</div>
+      <div class="fb-name">VADER → compound score (−1.0 to +1.0)</div>
+      <div class="fb-detail">_analyzer.polarity_scores(title). Then _FORCE_NEGATIVE_RE check — forces compound below −0.05 for known bad patterns regardless of VADER score.</div>
+    </div>
+    <div class="flow-down">↓</div>
+
+    <div class="flow-box purple">
+      <div class="fb-label">Quality layer</div>
+      <div class="fb-name">_quality_flags(title, url, compound)</div>
+      <div class="fb-detail">Returns 7 flags: sarcasm_risk, opinion, clickbait, satire, press_release, junk, framing_risk. Satire/press_release/junk → story excluded entirely.</div>
+    </div>
+    <div class="flow-down">↓</div>
+
+    <div class="flow-box">
+      <div class="fb-label">Classify</div>
+      <div class="fb-name">_classify(compound) → pro / con / flagged</div>
+      <div class="fb-detail">compound ≥ 0.15 → pro candidate. compound ≤ −0.05 → con. Otherwise → flagged. Pro + (sarcasm_risk OR framing_risk) → moved to flagged.</div>
+    </div>
+    <div class="flow-down">↓ back in _fetch()</div>
+
+    <div class="flow-box">
+      <div class="fb-label">Aggregate + cap</div>
+      <div class="fb-name">Cap per source · deduplicate · sort</div>
+      <div class="fb-detail">Pro: max 4 per source (6 for investigative). _deduplicate() removes Jaccard-similar headlines (≥0.48 overlap). Pro sorted by compound × recency_weight. Con sorted ascending.</div>
+    </div>
+    <div class="flow-down">↓</div>
+
+    <div class="flow-box">
+      <div class="fb-label">Score</div>
+      <div class="fb-name">ProCon Score = (len(pro) / scored) × 100</div>
+      <div class="fb-detail">Scored = pro + con only. Flagged excluded from score calculation.</div>
+    </div>
+    <div class="flow-down">↓</div>
+
+    <div class="flow-box green">
+      <div class="fb-label">State update</div>
+      <div class="fb-name">_state{} — thread-safe via _lock</div>
+      <div class="fb-detail">pro[:20], con[:14], flagged[:10], score, sources, last_updated, counts, ready=True</div>
+    </div>
+    <div class="flow-down">↓ also writes to DB</div>
+
+    <div class="flow-box purple">
+      <div class="fb-label">Persist</div>
+      <div class="fb-name">_record_score() → score_history table</div>
+      <div class="fb-detail">Writes score + counts to Neon PostgreSQL. Feeds /api/score/history → sparkline + context card.</div>
+    </div>
+    <div class="flow-down">↓ on GET /</div>
+
+    <div class="flow-box green">
+      <div class="fb-label">Render</div>
+      <div class="fb-name">render_template('index.html', **d)</div>
+      <div class="fb-detail">Jinja2 template. All ad slots resolved, geo-feed computed, admin data attached, issue number calculated.</div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="sec-title">Branch outcomes</div>
+      <div class="flow-branch">
+        <div class="flow-box green">
+          <div class="fb-label">Pro feed</div>
+          <div class="fb-name">Worth reading</div>
+          <div class="fb-detail">compound ≥ 0.15, no sarcasm/framing risk. Up to 20 shown. Sorted by quality × recency.</div>
+        </div>
+        <div class="flow-box red">
+          <div class="fb-label">Con feed</div>
+          <div class="fb-name">Filtered out</div>
+          <div class="fb-detail">compound ≤ −0.05. Up to 14 shown. Counts toward score denominator.</div>
+        </div>
+        <div class="flow-box amber">
+          <div class="fb-label">Flagged</div>
+          <div class="fb-name">Held for judgement</div>
+          <div class="fb-detail">Ambiguous — positive score with risk flags, neutral, or editorial held. Up to 10 shown. NOT counted in ProCon score.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ FILTERS -->
+<div class="panel" id="tab-filters">
+  <div class="sec-title">Filter chain · _fetch_one() + _quality_flags()</div>
+  <p class="desc">Every headline passes through this chain in order. First match that applies wins. Each step can exclude, demote, or flag a story.</p>
+
+  <div class="filter-chain">
+
+    <div class="filter-step exclude">
+      <div class="fs-num">STEP 1 — HARD EXCLUDE</div>
+      <div class="fs-name">Satire · Press release · Junk results</div>
+      <code class="fs-code">SATIRE_DOMAINS · _PRESS_RELEASE_RE · _RESULTS_RE</code>
+      <div class="fs-result">Story dropped entirely. Never shown anywhere. Logged as excluded in feed worker.</div>
+    </div>
+
+    <div class="filter-step force">
+      <div class="fs-num">STEP 2 — FORCE NEGATIVE</div>
+      <div class="fs-name">Known bad patterns regardless of VADER score</div>
+      <code class="fs-code">_FORCE_NEGATIVE_RE → compound = min(compound, −0.06)</code>
+      <div class="fs-result">Catches: war crimes, massacre, genocide, ethnic cleansing, airstrike, civilian killed, children killed, voting rights suppression, financial crime verbs (embezzle, defraud etc). VADER cannot be trusted on these — override.</div>
+    </div>
+
+    <div class="filter-step">
+      <div class="fs-num">STEP 3 — THRESHOLD GATE</div>
+      <div class="fs-name">Positive threshold check</div>
+      <code class="fs-code">POSITIVE_THRESHOLD = 0.15 · NEGATIVE_THRESHOLD = −0.05</code>
+      <div class="fs-result">compound ≥ 0.15 → pro candidate. compound ≤ −0.05 → con. Between → neutral → flagged. Raised from 0.05 on 16 May 2026 to reduce false positives.</div>
+    </div>
+
+    <div class="filter-step flag">
+      <div class="fs-num">STEP 4 — WAR &amp; CONFLICT GATE</div>
+      <div class="fs-name">Topic-level override for conflict stories</div>
+      <code class="fs-code">if _get_topic(title) == 'War &amp; Conflict' and compound &lt; 0.5: sarcasm_risk = True</code>
+      <div class="fs-result">War headlines almost never belong in pro feed. Requires compound ≥ 0.5 (strongly positive — e.g. "War ends, peace deal signed") to pass. Everything else → flagged.</div>
+    </div>
+
+    <div class="filter-step flag">
+      <div class="fs-num">STEP 5 — NEGATIVE CONTEXT WORD CHECK</div>
+      <div class="fs-name">Word-level negative context detection</div>
+      <code class="fs-code">_NEGATIVE_CONTEXT (80+ words) → sarcasm_risk = True</code>
+      <div class="fs-result">If compound ≥ 0.15 AND any word in title matches the set → sarcasm_risk. Covers: crisis, war, kill, disaster, fraud, corruption, survivor, victim, refugee, ceasefire, terror, suicide, overdose, trafficking, civilian, airstrike, and 60+ more.</div>
+    </div>
+
+    <div class="filter-step flag">
+      <div class="fs-num">STEP 6 — QUALITY FLAGS</div>
+      <div class="fs-name">Scare quotes · Clickbait · Opinion · Framing risk</div>
+      <code class="fs-code">_SCARE_QUOTE_RE · _CLICKBAIT_RE · _OPINION_STARTERS · _FRAMING_RISK_RE</code>
+      <div class="fs-result">Scare quotes or question marks → sarcasm_risk. Clickbait openers → clickbait flag. Opinion starters ("Why ", "Analysis: ") → opinion flag. Geographic framing errors → framing_risk flag.</div>
+    </div>
+
+    <div class="filter-step pass">
+      <div class="fs-num">STEP 7 — ROUTING</div>
+      <div class="fs-name">Final classification decision</div>
+      <code class="fs-code">pro + (sarcasm_risk OR framing_risk) → flagged | pro → pro | con → con | neutral → flagged</code>
+      <div class="fs-result">Only clean pro stories with no risk flags reach the pro feed. Everything with any flag goes to Held. Con goes to filtered. This is the last gate before display.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ DATABASE -->
+<div class="panel" id="tab-database">
+  <div class="sec-title">Database schema · Neon PostgreSQL</div>
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-label">Table</div>
+      <div class="card-title">dispatches</div>
+      <div class="card-body">Editor-curated stories filed via The Dispatch. Stores: <code>url, title, source, compound, label, sarcasm_risk, opinion, clickbait, submitted_at</code></div>
+      <div class="card-tags"><span class="tag tag-blue">Editorial</span><span class="tag tag-green">Public read</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table</div>
+      <div class="card-title">opinion_says</div>
+      <div class="card-body">Single-row editor opinion statement. Replaced on each publish. Stores: <code>body, updated_at</code>. Max 1,000 chars.</div>
+      <div class="card-tags"><span class="tag tag-blue">Editorial</span><span class="tag tag-amber">Admin write</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table</div>
+      <div class="card-title">page_views</div>
+      <div class="card-body">One-way hashed IP + device type per daily visit. Used for unique visitor count and "readers now" metric. No raw IP stored. <code>ip_hash, device, visited_at</code></div>
+      <div class="card-tags"><span class="tag tag-purple">Analytics</span><span class="tag tag-green">Auto</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table</div>
+      <div class="card-title">ads</div>
+      <div class="card-body">Paid advertiser records per slot. Stores: <code>slot, advertiser, url, headline, strapline, cta, bg_color, accent, image_url, active</code>. Max 5 per slot.</div>
+      <div class="card-tags"><span class="tag tag-amber">Revenue</span><span class="tag tag-amber">Admin write</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table</div>
+      <div class="card-title">ad_impressions</div>
+      <div class="card-body">Fires on every ad rotation (JS → POST /api/impression). Stores: <code>ad_id, slot, seen_at</code>. Drives CPM revenue calculation in analytics.</div>
+      <div class="card-tags"><span class="tag tag-amber">Revenue</span><span class="tag tag-green">Auto</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table</div>
+      <div class="card-title">story_clicks</div>
+      <div class="card-body">Fires when any story link is clicked. Event delegation on document (captures static + dynamic dispatch items). sendBeacon for guaranteed delivery on page navigate. Stores URL hash, topic, source. No PII. Powers top-topic analytics.</div>
+      <div class="card-tags"><span class="tag tag-purple">Analytics</span><span class="tag tag-green">Auto</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table</div>
+      <div class="card-title">shoutouts</div>
+      <div class="card-body">Paid reader messages via Stripe. Stores: <code>message, sender_name, sender_email, stripe_session, paid, replied</code>. Admin inbox shows unpaid+unreplied.</div>
+      <div class="card-tags"><span class="tag tag-amber">Revenue</span><span class="tag tag-blue">Stripe</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table</div>
+      <div class="card-title">sponsors</div>
+      <div class="card-body">GitHub Sponsors and Patreon webhook events. Stores: <code>platform, sponsor_name, tier_name, amount_cents, event_type, fulfilled</code>. Admin tracks and marks fulfilled.</div>
+      <div class="card-tags"><span class="tag tag-amber">Revenue</span><span class="tag tag-blue">Webhook</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table · New</div>
+      <div class="card-title">score_history</div>
+      <div class="card-body">Records every fetch cycle result. Stores: <code>score, pro_count, con_count, total, recorded_at</code>. Feeds the 7-day sparkline and context card. Powers the future ProCon API product.</div>
+      <div class="card-tags"><span class="tag tag-green">Analytics</span><span class="tag tag-purple">API product</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Table · New</div>
+      <div class="card-title">subscribers</div>
+      <div class="card-body">Newsletter signup list. Stores: <code>email, confirmed, subscribed_at</code>. ON CONFLICT DO NOTHING prevents duplicates. Exportable to ESP (Brevo/ConvertKit) when digest launches.</div>
+      <div class="card-tags"><span class="tag tag-blue">Newsletter</span><span class="tag tag-amber">Revenue pipeline</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ API -->
+<div class="panel" id="tab-api">
+  <div class="sec-title">API endpoints · Flask routes</div>
+
+  <div class="api-group">
+    <div class="api-group-label">Public — no auth</div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/</span><span class="api-desc">Main page. Renders index.html with full state, ads, geo-feed, analytics.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/about</span><span class="api-desc">Methodology, editorial standards, privacy notice.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/score</span><span class="api-desc">Current ProCon score + counts. Polled every 60s by live score watcher.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/score/history</span><span class="api-desc">7-day daily average scores. Feeds sparkline SVG + context card.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/progress</span><span class="api-desc">Live fetch progress per source. Polled by loader screen during initial load.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/dispatch</span><span class="api-desc">Last 8 dispatched stories. Polled every 2 min for new items.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/subscribe</span><span class="api-desc">Newsletter signup. Email validation + duplicate check. Stores to subscribers table.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/impression</span><span class="api-desc">Ad impression log. Fires on every 45s rotation. ad_id + slot → ad_impressions.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/click</span><span class="api-desc">Story click tracking. URL hash + topic + source → story_clicks.</span><span class="api-pub">Public</span></div>
+  </div>
+
+  <div class="api-group">
+    <div class="api-group-label">Admin — session or token required</div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/refresh</span><span class="api-desc">Trigger early fetch cycle. Spawns _fetch() thread immediately.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/submit</span><span class="api-desc">File a story to The Dispatch. URL → extract title → VADER → store.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method del">DEL</span><span class="api-path">/api/dispatch/&lt;id&gt;</span><span class="api-desc">Remove a filed story from The Dispatch.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/submit/clear</span><span class="api-desc">Wipe all dispatches.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/opinion</span><span class="api-desc">Publish OpinionSays statement. Replaces previous. Max 1,000 chars.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/opinion/clear</span><span class="api-desc">Remove OpinionSays.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/ad</span><span class="api-desc">Add advertiser to a slot. Max 5 per slot. Stores full creative.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method del">DEL</span><span class="api-path">/api/ad/&lt;id&gt;</span><span class="api-desc">Deactivate an ad (sets active=FALSE, not deleted).</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/ad/clear</span><span class="api-desc">Clear all ads from a slot — reverts to self-promo.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/analytics</span><span class="api-desc">Dedicated analytics dashboard — live stats, 30-day traffic chart, topic/source breakdown, CPM projections, score history.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/analytics</span><span class="api-desc">Core metrics: single CTE query — impressions, clicks, readers (30min window), visitors, CPM base. Replaces 8 sequential queries.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/analytics/traffic?days=N</span><span class="api-desc">Daily unique visitors for last N days (max 90). Powers 30-day bar chart.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/api/analytics/clicks?days=N</span><span class="api-desc">Top topics and sources by click count for last N days. Powers performance tables.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/sponsors/&lt;id&gt;/fulfill</span><span class="api-desc">Mark sponsor shoutout as fulfilled.</span><span class="api-auth">Admin</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/api/shoutout/&lt;id&gt;/reply</span><span class="api-desc">Mark shoutout as replied.</span><span class="api-auth">Admin</span></div>
+  </div>
+
+  <div class="api-group">
+    <div class="api-group-label">Webhooks — signed payloads</div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/webhook/stripe</span><span class="api-desc">Stripe checkout.session.completed → mark shoutout paid. HMAC verified.</span><span class="api-auth">Signed</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/webhook/github-sponsors</span><span class="api-desc">GitHub sponsorship events → sponsors table. SHA256 verified.</span><span class="api-auth">Signed</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/webhook/patreon</span><span class="api-desc">Patreon pledge events → sponsors table. MD5 verified.</span><span class="api-auth">Signed</span></div>
+  </div>
+
+  <div class="api-group">
+    <div class="api-group-label">PWA + Auth</div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/manifest.json</span><span class="api-desc">PWA manifest. App name, icons, display mode, theme colour.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/sw.js</span><span class="api-desc">Service worker. Cache-first for assets, network-first for navigation, offline fallback.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/offline</span><span class="api-desc">Offline fallback page. Served by service worker when network unavailable.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method get">GET</span><span class="api-path">/login</span><span class="api-desc">Admin login form. Rate-limited: 5 attempts per 15 min per IP.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/login</span><span class="api-desc">Validates DISPATCH_ADMIN_TOKEN. Sets session cookie. 30-day session.</span><span class="api-pub">Public</span></div>
+    <div class="api-row"><span class="api-method post">POST</span><span class="api-path">/logout</span><span class="api-desc">Clears session.</span><span class="api-auth">Admin</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ SERVICES -->
+<div class="panel" id="tab-services">
+  <div class="sec-title">External services · dependencies + failure modes</div>
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-label">RSS · 32 sources</div>
+      <div class="card-title">News feeds</div>
+      <div class="card-body">feedparser parses each source. 25s thread timeout. Individual source failures tracked in <code>_source_errors{}</code>. Consecutive errors shown in sources panel. <br><br>If fails: that source marked offline, rest of feed unaffected.</div>
+      <div class="card-tags"><span class="tag tag-green">Resilient</span><span class="tag tag-amber">Per-source fallback</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Sentiment · Local</div>
+      <div class="card-title">VADER</div>
+      <div class="card-body">vaderSentiment — installed Python package. Runs entirely in-process. No external call. Cannot fail independently. <br><br>If fails: entire pipeline breaks — app crashes.</div>
+      <div class="card-tags"><span class="tag tag-green">Local</span><span class="tag tag-red">Critical dependency</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Database · Cloud</div>
+      <div class="card-title">Neon PostgreSQL</div>
+      <div class="card-body">DATABASE_URL env var. ThreadedConnectionPool(2–10) — no fresh TCP per request. _db_conn() is a contextmanager yielding pooled connections. _log_pageview() runs in a daemon thread — never blocks the page load. All DB functions wrapped in try/except — graceful degradation.<br><br>If fails: feed still works. Dispatch/ads/analytics degrade gracefully.</div>
+      <div class="card-tags"><span class="tag tag-purple">Neon</span><span class="tag tag-green">Graceful degradation</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Payment · Cloud</div>
+      <div class="card-title">Stripe</div>
+      <div class="card-body">STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET env vars. Used only for Shoutout feature (£1.50). Belt-and-braces: both redirect confirm AND webhook mark payment. <br><br>If fails: Shoutout disabled, rest of site unaffected.</div>
+      <div class="card-tags"><span class="tag tag-amber">Revenue</span><span class="tag tag-green">Isolated</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Deployment · Cloud</div>
+      <div class="card-title">Railway</div>
+      <div class="card-body">Auto-deploys on push to main. Procfile: <code>web: gunicorn app:app</code>. Hobby pack — 5 slots, 3 used. PORT env var. 512MB RAM limit — VADER + feedparser are the heavy users.</div>
+      <div class="card-tags"><span class="tag tag-blue">Hosting</span><span class="tag tag-amber">3/5 slots used</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Geo · Cloud</div>
+      <div class="card-title">ip-api.com</div>
+      <div class="card-body">Free tier. Returns country code from IP. 2s timeout. Used for "Your Signal" regional feed. Cached in session cookie. <br><br>If fails: country code = 'XX', no regional stories shown. Silent failure.</div>
+      <div class="card-tags"><span class="tag tag-green">Optional</span><span class="tag tag-green">Silent fallback</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Typography · CDN</div>
+      <div class="card-title">Google Fonts</div>
+      <div class="card-body">Newsreader + IBM Plex Sans + IBM Plex Mono. Preconnected in head. <br><br>If fails: system serif/sans/mono fallbacks kick in. Layout holds. Appearance degrades slightly.</div>
+      <div class="card-tags"><span class="tag tag-green">Non-critical</span><span class="tag tag-green">Fallbacks set</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Sponsorship · Webhook</div>
+      <div class="card-title">GitHub Sponsors + Patreon</div>
+      <div class="card-body">Webhook events → sponsors table. HMAC/MD5 signed. Admin dashboard shows unfulfilled. Manual shoutout process — no automation yet. <br><br>If fails: events not recorded. Sponsors still pay — just not tracked.</div>
+      <div class="card-tags"><span class="tag tag-amber">Revenue</span><span class="tag tag-amber">Manual follow-up</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ ADS -->
+<div class="panel" id="tab-ads">
+  <div class="sec-title">Ad system · 5 slots + dispatch sponsor</div>
+  <p class="desc">Each slot resolves: paid advertiser → fallback self-promo. Rotation happens in JS every 45 seconds. Impressions logged per rotation.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Slot · top</div>
+      <div class="card-title">#adwrap-top</div>
+      <div class="card-body">Between signup strip and topic filter. Full-width strip. First commercial position after the score. <br><br>Fallback: <strong>Investigator</strong> self-promo (dark navy, red accent).</div>
+      <div class="card-tags"><span class="tag tag-amber">Premium position</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Slot · mid</div>
+      <div class="card-title">#adwrap-mid</div>
+      <div class="card-body">Between sponsor log and sources. High-dwell position — readers have just finished the main feed. <br><br>Current: <strong>YCG</strong> — yourcommsgroup.com (dark navy, telecoms blue).</div>
+      <div class="card-tags"><span class="tag tag-blue">YCG live</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Slot · bottom</div>
+      <div class="card-title">#adwrap-bottom</div>
+      <div class="card-body">Below sources, above visitor counter. End-of-session — high intent readers. <br><br>Fallback: <strong>QuantumProtect</strong> self-promo (dark blue, green accent).</div>
+      <div class="card-tags"><span class="tag tag-amber">End-of-session</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Slot · sidebar</div>
+      <div class="card-title">.ad-sidebar-wrap</div>
+      <div class="card-body">Right column, sticky scroll. Desktop only. In view for the entire reading session. Supports image (portrait format). <br><br>Fallback: <strong>MeDea</strong> self-promo (Share MeDea →).</div>
+      <div class="card-tags"><span class="tag tag-amber">Highest dwell</span><span class="tag tag-blue">Desktop only</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Slot · feed</div>
+      <div class="card-title">.ad-feed-wrap</div>
+      <div class="card-body">Below-stories right column (alongside filtered/held feeds). Secondary editorial position. <br><br>Fallback: <strong>NetSecure</strong> self-promo.</div>
+      <div class="card-tags"><span class="tag tag-amber">Secondary</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Slot · float (mobile)</div>
+      <div class="card-title">.ad-float</div>
+      <div class="card-body">Fixed bottom bar on mobile screens only. Dismissible (×). Mirrors sidebar creative. No separate slot — uses sidebar ad data. <br><br>Shown on: max-width 768px.</div>
+      <div class="card-tags"><span class="tag tag-blue">Mobile only</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Editorial · dispatch</div>
+      <div class="card-title">.dispatch-sponsor</div>
+      <div class="card-body">Base of The Dispatch section. Not a rotated slot — hardcoded editorial placement. <br><br>Current: <strong>REALGAZ</strong> property ad. Dark gold card. Replace when properties sold or new sponsor agreed.</div>
+      <div class="card-tags"><span class="tag tag-gold">REALGAZ live</span><span class="tag tag-blue">Editorial</span></div>
+    </div>
+  </div>
+
+  <div class="sec-title" style="margin-top:8px">Slot resolution logic (app.py)</div>
+  <div class="filter-chain">
+    <div class="filter-step">
+      <div class="fs-num">1 — DB lookup</div>
+      <div class="fs-name">_get_ads_for_slot(slot)</div>
+      <code class="fs-code">SELECT * FROM ads WHERE slot=%s AND active=TRUE ORDER BY created_at ASC</code>
+      <div class="fs-result">Returns list of paid ads. If list empty → returns [self_promo fallback].</div>
+    </div>
+    <div class="filter-step">
+      <div class="fs-num">2 — First ad shown</div>
+      <div class="fs-name">_get_ad(slot)</div>
+      <code class="fs-code">ads[0] if ads else _SELF_PROMOS.get(slot)</code>
+      <div class="fs-result">ad_list passed to template as JSON for rotation. JS cycles through them every 45s.</div>
+    </div>
+    <div class="filter-step pass">
+      <div class="fs-num">3 — Impression fire</div>
+      <div class="fs-name">JS → POST /api/impression</div>
+      <code class="fs-code">fetch('/api/impression', {ad_id, slot}) on each rotation</code>
+      <div class="fs-result">Logged to ad_impressions. Powers CPM analytics. Self-promos have no ad_id so impression is not logged.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ INJECT -->
+<div class="panel" id="tab-inject">
+  <div class="sec-title">⚡ Injection points · where to add features</div>
+  <p class="desc">Each marked point is a clean seam in the architecture. Plug in without touching unrelated code.</p>
+
+  <div class="inject-list">
+
+    <div class="inject-item">
+      <div class="i-where">app.py → _classify() or after _quality_flags()</div>
+      <div class="i-what">ML sentiment model</div>
+      <div class="i-detail">Replace or augment VADER with a fine-tuned news-domain model (HuggingFace distilbert-base-uncased-finetuned-sst-2). VADER is fast but news-naive. A trained model could reduce false positives further. Injection: add a second compound score, average or take the more conservative.</div>
+    </div>
+
+    <div class="inject-item">
+      <div class="i-where">app.py → after _record_score() in _fetch()</div>
+      <div class="i-what">Push notification alert</div>
+      <div class="i-detail">When score drops below 30, send a web push to all subscribed PWA users. Needs: a push subscription table, Web Push library (pywebpush), VAPID keys. The service worker is already registered — only backend work needed.</div>
+    </div>
+
+    <div class="inject-item">
+      <div class="i-where">app.py → new route + subscribers table</div>
+      <div class="i-what">Email digest sender</div>
+      <div class="i-detail">The subscriber list is building. Add a POST /api/admin/send-digest route that: pulls top 5 pro stories from _state, formats them as an HTML email, calls Brevo or ConvertKit API to send to confirmed subscribers. Run daily via a cron job or Railway scheduled task.</div>
+    </div>
+
+    <div class="inject-item">
+      <div class="i-where">app.py → new route /api/v1/score</div>
+      <div class="i-what">ProCon API product</div>
+      <div class="i-detail">The score_history table is now populating every 30 minutes. A paid API that exposes historical score + topic breakdown is a B2B product. Add: API key table, rate limiting middleware, a /api/v1/score endpoint that returns {score, pro_count, con_count, topics, timestamp} per day. Charge £99-500/month per subscriber.</div>
+    </div>
+
+    <div class="inject-item">
+      <div class="i-where">FEEDS list in app.py</div>
+      <div class="i-what">New RSS sources (Finance, Science, etc.)</div>
+      <div class="i-detail">Add any RSS-enabled source as a tuple: (name, rss_url, bias_label, website). Immediate effect on next fetch cycle. Candidates: Reuters Business (feeds.reuters.com/reuters/businessNews), MarketWatch (feeds.marketwatch.com/marketwatch/topstories/), The Economist Finance (economist.com/finance-and-economics/rss.xml).</div>
+    </div>
+
+    <div class="inject-item">
+      <div class="i-where">_SELF_PROMOS dict + index.html masthead</div>
+      <div class="i-what">Leaderboard ad unit</div>
+      <div class="i-detail">Add a 'leaderboard' slot between the masthead and the lede. 728×90 style. The highest-value digital ad position (above-the-fold, below brand). Needs: new slot in _SELF_PROMOS, new ad_slot() call in template, CSS for the unit. Estimated value: 2-3× CPM of strip ads.</div>
+    </div>
+
+    <div class="inject-item">
+      <div class="i-where">templates/index.html → premium tier gate</div>
+      <div class="i-what">£2.99/month premium tier</div>
+      <div class="i-detail">Stripe subscription (not one-time). Add: stripe_subscription_id to a new subscriptions table, a /subscribe/premium route, a session flag for premium users. Premium unlocks: no ads (check premium flag in ad_slot macro), push alerts, archive access. The Stripe infrastructure is already wired.</div>
+    </div>
+
+    <div class="inject-item">
+      <div class="i-where">app.py → _get_regional_stories() or new route</div>
+      <div class="i-what">Topic trend graph</div>
+      <div class="i-detail">The story_clicks table records topic per click. Add an endpoint that aggregates topic click counts over 7 days and returns a ranked list. Render as a small bar chart in the sidebar or below sources. Shows which topics readers are actually reading — editorial intelligence.</div>
+    </div>
+
+    <div class="inject-item">
+      <div class="i-where">Railway — 2 unused slots</div>
+      <div class="i-what">Standalone services</div>
+      <div class="i-detail">Slots 4 and 5 of the Hobby pack are empty. Candidates: BeaconLogger (ready to deploy — silent asset-ping system), or a dedicated ProCon API microservice (separate from MeDea, serving the B2B API product cleanly).</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ PAGE MAP -->
+<div class="panel" id="tab-page">
+  <div class="sec-title">Page zones · tap a zone to see details</div>
+
+  <div class="page-map">
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:3px solid var(--ink)">
+      <div><span class="zone-name">Utility Bar</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.masthead-utility</span>
+        <span class="zone-badge tag-blue tag">Top right</span>
+      </div>
+    </div>
+    <div class="zone-detail">Absolute positioned top-right of masthead. Contains: Refresh (icon), Theme toggle (icon), Sign out (admin only). Kept minimal — does not compete with brand name.</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:3px solid var(--green)">
+      <div><span class="zone-name">Masthead Brand</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.brand .mark</span>
+        <span class="zone-badge tag-green tag">Centred · 58-100px</span>
+      </div>
+    </div>
+    <div class="zone-detail"><code>Me&lt;em&gt;Dea&lt;/em&gt;</code> — serif italic, clamp(58px, 9vw, 100px). Em tag colours "Dea" in green (var(--pos-deep)). Tagline below: "News worth reading" in small caps, 0.40em letter-spacing.</div>
+
+    <div class="zone" onclick="toggleZone(this)">
+      <div><span class="zone-name">Masthead Strip</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.masthead-strip</span>
+        <span class="zone-badge tag-amber tag">Centred secondary line</span>
+      </div>
+    </div>
+    <div class="zone-detail">Vol. I · No. [issue_number] · [last_updated] · ● Live · Sponsor. Issue number = days since launch date (2026-05-11) + 1. Computed in <code>_issue_number()</code>.</div>
+
+    <div class="zone" onclick="toggleZone(this)">
+      <div><span class="zone-name">Submast</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.submast</span>
+        <span class="zone-badge tag-blue tag">Counts + share</span>
+      </div>
+    </div>
+    <div class="zone-detail">Left: "The signal report · A daily filter on 32 newsrooms" + signal strength bars (4 bars, lit based on live source count). Right: green [X] worth reading · red [X] filtered · amber [X] held · Share ↗</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:2px solid var(--green)">
+      <div><span class="zone-name">Lede — Score</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.lede</span>
+        <span class="zone-badge tag-green tag">Above the fold</span>
+      </div>
+    </div>
+    <div class="zone-detail">2-col grid: left = kicker + h1 sentence + description. Right = large mono score number (80-132px) + tick bars + 7-day sparkline SVG + trend label. Score colour: green ≥60, amber 40-60, red &lt;40.</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:2px solid var(--ink)">
+      <div><span class="zone-name">Newsletter Signup Strip</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.signup-strip</span>
+        <span class="zone-badge tag-blue tag">2-column</span>
+      </div>
+    </div>
+    <div class="zone-detail">Left col: label + pitch + email input + consent checkbox + Join button. Right col (desktop): 7-day signal context card — shows 7-day average vs today's score + trend direction. Pulls from <code>/api/score/history</code>. On mobile: stacks vertically.</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:2px solid var(--amber)">
+      <div><span class="zone-name">Top Ad Slot</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">#adwrap-top</span>
+        <span class="zone-badge tag-amber tag">Ad · Premium</span>
+      </div>
+    </div>
+    <div class="zone-detail">Full-width strip. Labelled "From the editor" (self-promo) or "Advertisement" (paid). Rotates every 45s if multiple advertisers. Impression logged per rotation. Fallback: Investigator.</div>
+
+    <div class="zone" onclick="toggleZone(this)">
+      <div><span class="zone-name">Topic Filter</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.topic-bar</span>
+        <span class="zone-badge tag-blue tag">JS filter</span>
+      </div>
+    </div>
+    <div class="zone-detail">Chip buttons: All + 9 topic categories (Politics, War &amp; Conflict, Crime &amp; Justice, Health, Economy, Environment, Technology, Education, Human Rights, General). Click chip → hides stories not matching topic. Pure JS, no server call.</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:2px solid var(--green)">
+      <div><span class="zone-name">Stories Grid</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.stories (grid 1.4fr 1fr)</span>
+        <span class="zone-badge tag-green tag">Main content</span>
+      </div>
+    </div>
+    <div class="zone-detail">Left column (1.4fr): Featured story (hero card) + pro story list (up to 20). Right column (1fr): Sidebar ad (sticky) → Dispatch → OpinionSays. Left column stacks above right on mobile.</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="margin-left:24px">
+      <div><span class="zone-name">↳ Dispatch Editorial Bottom</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.dispatch-sponsor</span>
+        <span class="zone-badge tag-gold tag">REALGAZ</span>
+      </div>
+    </div>
+    <div class="zone-detail">Base of The Dispatch section. Currently: REALGAZ property ad — dark warm card (#1a1208), gold accent (#c9a84c), "0.11-acre plot. 3 beds..." pitch, "Enquire directly →" CTA. Below it: small GitHub Sponsors pitch. Update when properties sold.</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:1px solid var(--rule)">
+      <div><span class="zone-name">Below Stories (filtered / held)</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.below-stories (grid 1fr 1fr)</span>
+        <span class="zone-badge tag-red tag">Con + Flagged</span>
+      </div>
+    </div>
+    <div class="zone-detail">Left: filtered strip (red, up to 14 con stories). Right column: flagged strip (amber, up to 10 held stories) + feed ad slot below. Con stories count toward ProCon denominator but are not shown in pro feed.</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:2px solid var(--blue)">
+      <div><span class="zone-name">Mid Ad Slot</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">#adwrap-mid</span>
+        <span class="zone-badge tag-blue tag">YCG live</span>
+      </div>
+    </div>
+    <div class="zone-detail">Full-width strip between stories area and sources. Currently: YCG — Your Comms Group (dark navy #0a1628, telecoms blue #1a7fe8). Links to yourcommsgroup.com.</div>
+
+    <div class="zone" onclick="toggleZone(this)">
+      <div><span class="zone-name">Sources (collapsible)</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.sources .sources-body</span>
+        <span class="zone-badge tag-amber tag">Collapsed by default</span>
+      </div>
+    </div>
+    <div class="zone-detail">Click "Where we read from ▼" to expand. Shows 32 sources in a 2-3 column grid. Each row: source name (links to website), bias label, signal bar (green/red/amber proportion), and counts (pro · con · flagged). Offline sources show error state.</div>
+
+    <div class="zone" onclick="toggleZone(this)">
+      <div><span class="zone-name">Visitor Counter</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.visitor-counter</span>
+        <span class="zone-badge tag-green tag">Centred · Odometer style</span>
+      </div>
+    </div>
+    <div class="zone-detail">6-digit odometer-style counter. "Readers reached". Count from page_views table (COUNT(*) — all time unique visitors by ip_hash + device). Centred. Green mono digits on card background.</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="border-top:2px solid var(--ink)">
+      <div><span class="zone-name">Footer</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">footer.colophon</span>
+        <span class="zone-badge tag-blue tag">Editorial identity</span>
+      </div>
+    </div>
+    <div class="zone-detail">Left: "MeDea · Editor in Chief: The Architect · © 2026 · Signal scored algorithmically. Editorial layer applied." Right: Methodology · Editorial standards · Privacy · Contact (all link to /about with hash anchors).</div>
+
+    <div class="zone" onclick="toggleZone(this)" style="background:var(--blue-bg);border-color:var(--blue)">
+      <div><span class="zone-name">Float Ad (mobile only)</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="zone-class">.ad-float</span>
+        <span class="zone-badge tag-blue tag">Fixed · bottom · ≤768px</span>
+      </div>
+    </div>
+    <div class="zone-detail">Fixed bottom bar on mobile. Dismissible via × button. Shows sidebar ad creative. Disappears on desktop (display:none above 768px). Does not stack with page scroll.</div>
+
+  </div>
+</div>
+
+<script>
+  function showTab(id){
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-'+id).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+  function toggleZone(el){
+    var detail = el.nextElementSibling;
+    if (!detail || !detail.classList.contains('zone-detail')) return;
+    var open = detail.classList.contains('open');
+    document.querySelectorAll('.zone-detail.open').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.zone.active-zone').forEach(z => z.classList.remove('active-zone'));
+    if (!open){
+      detail.classList.add('open');
+      el.classList.add('active-zone');
+    }
+  }
+</script>
+</body>
+</html>
