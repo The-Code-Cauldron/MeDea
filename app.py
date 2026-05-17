@@ -6,6 +6,7 @@ import hashlib
 import html as _html
 import logging
 import threading
+import contextlib
 import time
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -15,6 +16,7 @@ import requests
 import feedparser
 import psycopg2
 import psycopg2.extras
+import psycopg2.pool
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import stripe
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
@@ -547,8 +549,34 @@ _source_errors = {}  # {name: consecutive_error_count}
 _DB_URL = os.environ.get('DATABASE_URL', '')
 
 
+# ── Connection pool (2–10 connections, thread-safe) ──────────────────────────
+_pool: 'psycopg2.pool.ThreadedConnectionPool | None' = None
+
+def _init_pool():
+    global _pool
+    if not _DB_URL:
+        return
+    try:
+        _pool = psycopg2.pool.ThreadedConnectionPool(minconn=2, maxconn=10, dsn=_DB_URL)
+        log.info('DB connection pool ready (2–10)')
+    except Exception as exc:
+        log.error(f'DB pool init failed: {exc}')
+
+@contextlib.contextmanager
 def _db_conn():
-    return psycopg2.connect(_DB_URL)
+    """Yield a pooled connection. Falls back to direct connect if pool not ready."""
+    if _pool:
+        conn = _pool.getconn()
+        try:
+            yield conn
+        finally:
+            _pool.putconn(conn)
+    else:
+        conn = psycopg2.connect(_DB_URL)
+        try:
+            yield conn
+        finally:
+            conn.close()
 
 
 def _init_db():
@@ -587,9 +615,7 @@ def _init_db():
                         ip_hash    TEXT
                     )
                 """)
-                cur.execute("""
-                    ALTER TABLE page_views ADD COLUMN IF NOT EXISTS ip_hash TEXT
-                """)
+                # ip_hash column is defined in CREATE TABLE above — no migration needed
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS ads (
                         id         SERIAL PRIMARY KEY,
@@ -972,6 +998,7 @@ def _fetch():
 
 def _loop():
     _init_db()
+    _init_pool()
     while True:
         _fetch()
         time.sleep(REFRESH_INTERVAL)
@@ -1148,31 +1175,34 @@ def _ip_hash(ip):
 
 
 def _log_pageview():
+    """Fire-and-forget pageview logging — offloaded to daemon thread so it
+    never adds latency to the page load. Request context captured before spawn."""
     if not _DB_URL:
         return
-    try:
-        ip     = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
-        ih     = _ip_hash(ip)
-        ua     = (request.headers.get('User-Agent') or '').lower()
-        device = 'mobile' if any(m in ua for m in ('mobile', 'android', 'iphone', 'ipad')) else 'desktop'
-        with _db_conn() as conn:
-            with conn.cursor() as cur:
-                # Check if this IP+device already has a record today
-                cur.execute("""
-                    SELECT id FROM page_views
-                    WHERE ip_hash = %s AND device = %s AND visited_at >= CURRENT_DATE
-                    LIMIT 1
-                """, (ih, device))
-                row = cur.fetchone()
-                if row:
-                    # Refresh timestamp — keeps unique visitor count accurate
-                    # but 'readers now' query sees the current visit
-                    cur.execute("UPDATE page_views SET visited_at = NOW() WHERE id = %s", (row[0],))
-                else:
-                    cur.execute("INSERT INTO page_views (device, ip_hash) VALUES (%s, %s)", (device, ih))
-            conn.commit()
-    except Exception:
-        pass
+    ip     = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip()
+    ua     = (request.headers.get('User-Agent') or '').lower()
+    device = 'mobile' if any(m in ua for m in ('mobile', 'android', 'iphone', 'ipad')) else 'desktop'
+    ih     = _ip_hash(ip)
+
+    def _write(ih=ih, device=device):
+        try:
+            with _db_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT id FROM page_views
+                        WHERE ip_hash = %s AND device = %s AND visited_at >= CURRENT_DATE
+                        LIMIT 1
+                    """, (ih, device))
+                    row = cur.fetchone()
+                    if row:
+                        cur.execute("UPDATE page_views SET visited_at = NOW() WHERE id = %s", (row[0],))
+                    else:
+                        cur.execute("INSERT INTO page_views (device, ip_hash) VALUES (%s, %s)", (device, ih))
+                conn.commit()
+        except Exception:
+            pass
+
+    threading.Thread(target=_write, daemon=True).start()
 
 
 _SELF_PROMOS = {
@@ -1709,73 +1739,84 @@ def api_analytics():
     try:
         with _db_conn() as conn:
             with conn.cursor() as cur:
-                # Impressions today
-                cur.execute("SELECT COUNT(*) FROM ad_impressions WHERE seen_at >= CURRENT_DATE")
-                imp_today = cur.fetchone()[0]
-                # Impressions this week
-                cur.execute("SELECT COUNT(*) FROM ad_impressions WHERE seen_at >= NOW() - INTERVAL '7 days'")
-                imp_week = cur.fetchone()[0]
-                # Top ad today
+                # Single CTE replaces 8 sequential round-trips — one DB call for all analytics
                 cur.execute("""
-                    SELECT a.advertiser, a.slot, COUNT(*) as c
-                    FROM ad_impressions i
-                    JOIN ads a ON a.id = i.ad_id
-                    WHERE i.seen_at >= CURRENT_DATE
-                    GROUP BY a.advertiser, a.slot
-                    ORDER BY c DESC LIMIT 1
-                """)
-                top_ad = cur.fetchone()
-                # Top topic today (story clicks)
-                cur.execute("""
-                    SELECT topic, COUNT(*) as c FROM story_clicks
-                    WHERE clicked_at >= CURRENT_DATE
-                    GROUP BY topic ORDER BY c DESC LIMIT 1
-                """)
-                top_topic = cur.fetchone()
-                # Story clicks today
-                cur.execute("SELECT COUNT(*) FROM story_clicks WHERE clicked_at >= CURRENT_DATE")
-                clicks_today = cur.fetchone()[0]
-                # Readers now (last 10 min)
-                cur.execute("""
-                    SELECT COUNT(DISTINCT ip_hash) FROM page_views
-                    WHERE visited_at >= NOW() - INTERVAL '10 minutes'
-                """)
-                readers_now = cur.fetchone()[0]
-                # Page views today / week — used as CPM base when no paid ads are live
-                cur.execute("""
+                    WITH
+                    imp AS (
+                        SELECT
+                            COUNT(*) FILTER (WHERE seen_at >= CURRENT_DATE)             AS today,
+                            COUNT(*) FILTER (WHERE seen_at >= NOW()-INTERVAL '7 days')  AS week
+                        FROM ad_impressions
+                    ),
+                    pv AS (
+                        SELECT
+                            COUNT(*) FILTER (WHERE visited_at >= CURRENT_DATE)           AS today,
+                            COUNT(*) FILTER (WHERE visited_at >= NOW()-INTERVAL '7 days') AS week
+                        FROM page_views
+                    ),
+                    readers AS (
+                        SELECT COUNT(DISTINCT ip_hash) AS cnt
+                        FROM page_views
+                        WHERE visited_at >= NOW()-INTERVAL '10 minutes'
+                    ),
+                    sc AS (
+                        SELECT COUNT(*) FILTER (WHERE clicked_at >= CURRENT_DATE) AS today
+                        FROM story_clicks
+                    ),
+                    top_topic AS (
+                        SELECT topic, COUNT(*) AS c
+                        FROM story_clicks WHERE clicked_at >= CURRENT_DATE
+                        GROUP BY topic ORDER BY c DESC LIMIT 1
+                    ),
+                    top_ad AS (
+                        SELECT a.advertiser, a.slot, COUNT(*) AS c
+                        FROM ad_impressions i JOIN ads a ON a.id = i.ad_id
+                        WHERE i.seen_at >= CURRENT_DATE
+                        GROUP BY a.advertiser, a.slot ORDER BY c DESC LIMIT 1
+                    )
                     SELECT
-                        COUNT(*) FILTER (WHERE visited_at >= CURRENT_DATE)               AS today,
-                        COUNT(*) FILTER (WHERE visited_at >= NOW() - INTERVAL '7 days')  AS week
-                    FROM page_views
+                        imp.today, imp.week,
+                        pv.today,  pv.week,
+                        readers.cnt,
+                        sc.today,
+                        top_topic.topic, top_topic.c,
+                        top_ad.advertiser, top_ad.slot, top_ad.c
+                    FROM imp, pv, readers, sc
+                    LEFT JOIN top_topic ON TRUE
+                    LEFT JOIN top_ad    ON TRUE
                 """)
-                pv = cur.fetchone()
-                visitors_today, visitors_week = (pv[0] or 0), (pv[1] or 0)
-                # Active sources this cycle
-                with _lock:
-                    sources_live = sum(1 for s in _state['sources'].values() if not s.get('error'))
-                    sources_total = len(_state['sources'])
-        # Effective impression base: use ad impressions when live, page views when not
-        cpm_base_today = imp_today if imp_today > 0 else visitors_today
-        cpm_base_week  = imp_week  if imp_week  > 0 else visitors_week
-        cpm_rate = 5  # £5 base CPM
+                row = cur.fetchone() or (0,0,0,0,0,0,None,None,None,None,None)
+                (imp_today, imp_week,
+                 visitors_today, visitors_week,
+                 readers_now, clicks_today,
+                 tt_topic, tt_count,
+                 ta_advertiser, ta_slot, ta_count) = row
+
+        with _lock:
+            sources_live  = sum(1 for s in _state['sources'].values() if not s.get('error'))
+            sources_total = len(_state['sources'])
+
+        cpm_rate       = 5
+        cpm_base_today = (imp_today or 0) if (imp_today or 0) > 0 else (visitors_today or 0)
+        cpm_base_week  = (imp_week  or 0) if (imp_week  or 0) > 0 else (visitors_week  or 0)
         return jsonify({
-            'imp_today':        imp_today,
-            'imp_week':         imp_week,
-            'visitors_today':   visitors_today,
-            'visitors_week':    visitors_week,
-            'cpm_base_today':   cpm_base_today,
-            'cpm_base_week':    cpm_base_week,
-            'clicks_today':     clicks_today,
-            'readers_now':      readers_now,
-            'sources_live':     sources_live,
-            'sources_total':    sources_total,
-            'top_ad':    {'name': top_ad[0], 'slot': top_ad[1], 'count': top_ad[2]} if top_ad else None,
-            'top_topic': {'topic': top_topic[0], 'count': top_topic[1]} if top_topic else None,
-            'score':            _state.get('score'),
-            'cpm_rate':         cpm_rate,
+            'imp_today':         imp_today        or 0,
+            'imp_week':          imp_week         or 0,
+            'visitors_today':    visitors_today   or 0,
+            'visitors_week':     visitors_week    or 0,
+            'cpm_base_today':    cpm_base_today,
+            'cpm_base_week':     cpm_base_week,
+            'clicks_today':      clicks_today     or 0,
+            'readers_now':       readers_now      or 0,
+            'sources_live':      sources_live,
+            'sources_total':     sources_total,
+            'top_topic': {'topic': tt_topic, 'count': tt_count} if tt_topic else None,
+            'top_ad':    {'name': ta_advertiser, 'slot': ta_slot, 'count': ta_count} if ta_advertiser else None,
+            'score':             _state.get('score'),
+            'cpm_rate':          cpm_rate,
             'est_revenue_today': round(cpm_base_today / 1000 * cpm_rate, 4),
             'est_revenue_week':  round(cpm_base_week  / 1000 * cpm_rate, 4),
-            'ads_live':         imp_today > 0,
+            'ads_live':          (imp_today or 0) > 0,
         })
     except Exception as exc:
         log.error(f'analytics: {exc}')
