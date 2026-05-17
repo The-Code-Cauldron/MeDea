@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MeDea — System Brain</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{background:#050508;font-family:'Courier New',monospace;user-select:none;}
+svg{width:100vw;height:100vh;cursor:grab;display:block;}
+svg.drag{cursor:grabbing;}
+
+#legend{position:fixed;top:16px;left:16px;background:rgba(5,5,8,0.92);border:1px solid #0d2010;padding:14px 18px;font-size:9.5px;color:#4b5563;line-height:1.4;}
+#legend h4{color:#22a860;font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;}
+.leg{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.ldot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.lline{width:22px;height:1px;flex-shrink:0;}
+.lnew{font-size:7.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#22a860;border:1px solid rgba(34,168,96,0.3);padding:1px 5px;border-radius:2px;margin-left:2px;}
+
+#title-block{position:fixed;top:16px;right:16px;text-align:right;}
+#title-block h1{font-size:11px;color:#22a860;letter-spacing:3px;text-transform:uppercase;}
+#title-block p{font-size:9px;color:#1e2e1e;letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+
+#hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);color:#1e2e1e;font-size:9px;letter-spacing:2px;white-space:nowrap;}
+
+#tip{position:fixed;display:none;background:#05100a;border:1px solid rgba(34,168,96,0.3);border-left:2px solid #22a860;padding:11px 15px;font-size:10px;color:#9ca3af;max-width:290px;pointer-events:none;z-index:200;line-height:1.75;white-space:pre-line;}
+#tip b{color:#22a860;display:block;margin-bottom:5px;font-size:11px;letter-spacing:0.5px;}
+</style>
+</head>
+<body>
+<svg id="svg">
+<defs>
+  <filter id="gA" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="gB" x="-120%" y="-120%" width="340%" height="340%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="14"/>
+  </filter>
+  <filter id="gC" x="-200%" y="-200%" width="500%" height="500%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="26"/>
+  </filter>
+  <radialGradient id="bgGrad" cx="50%" cy="45%" r="65%">
+    <stop offset="0%" stop-color="#050f08"/>
+    <stop offset="100%" stop-color="#050508"/>
+  </radialGradient>
+</defs>
+<g id="canvas">
+  <rect id="bgRect" fill="url(#bgGrad)"/>
+  <g id="gEdges"></g>
+  <g id="gPulses"></g>
+  <g id="gNodes"></g>
+  <g id="gLabels"></g>
+</g>
+</svg>
+
+<div id="legend">
+  <h4>MeDea · System Brain</h4>
+  <div class="leg"><div class="ldot" style="background:#22a860;box-shadow:0 0 6px #22a860"></div>Platform Core</div>
+  <div class="leg"><div class="ldot" style="background:#3b82f6;box-shadow:0 0 6px #3b82f6"></div>Server / Routes</div>
+  <div class="leg"><div class="ldot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b"></div>Feed Engine</div>
+  <div class="leg"><div class="ldot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div>Score System</div>
+  <div class="leg"><div class="ldot" style="background:#06b6d4;box-shadow:0 0 6px #06b6d4"></div>Analytics <span class="lnew">new</span></div>
+  <div class="leg"><div class="ldot" style="background:#c9a84c;box-shadow:0 0 6px #c9a84c"></div>Revenue · Ads</div>
+  <div class="leg"><div class="ldot" style="background:#16a34a;box-shadow:0 0 6px #16a34a"></div>Data · Deploy</div>
+  <div class="leg"><div class="ldot" style="background:#10b981;box-shadow:0 0 6px #10b981"></div>Templates · UI</div>
+  <div class="leg" style="margin-top:8px;border-top:1px solid #0d2010;padding-top:8px;">
+    <div class="lline" style="background:rgba(34,168,96,0.5)"></div>&nbsp;Animated = live data flow
+  </div>
+  <div class="leg">
+    <div class="lline" style="border-top:1px dashed #1a2a1a"></div>&nbsp;Dashed = cross-system
+  </div>
+</div>
+
+<div id="title-block">
+  <h1>System Brain</h1>
+  <p>MeDea · Architecture · v3</p>
+</div>
+
+<div id="hint">SCROLL to zoom &nbsp;·&nbsp; DRAG to pan &nbsp;·&nbsp; HOVER any node for detail</div>
+<div id="tip"></div>
+
+<script>
+// ─── NODE DATA ──────────────────────────────────────────────────────────────
+// All positions designed for 1600×1000 internal canvas
+const N = [
+
+  // ══ CORE ══
+  { id:'root', x:800, y:490, r:46, col:'#22a860', lbl:'MeDea',
+    sub:'News Signal Intelligence Platform\nFlask · VADER · feedparser · PostgreSQL\nRailway · 30+ global sources · Hourly scoring\nProCon Score: single number from 30 newsrooms\nEvent delegation clicks · sendBeacon · Connection pool' },
+
+  // ══ SERVER / ROUTES ══
+  { id:'server', x:800, y:240, r:30, col:'#3b82f6', lbl:'server.py',
+    sub:'Flask app · 2,200+ lines · 40+ routes\nThreadedConnectionPool(2–10) — pooled DB\n_log_pageview() — daemon thread, non-blocking\nanalytics: single CTE replaces 8 queries\nVADER sentiment · feedparser · Stripe · HMAC webhooks\nLog.warning on pool fallback — observable in Railway logs' },
+
+  { id:'r_index', x:555, y:88, r:18, col:'#60a5fa', lbl:'/',
+    sub:'GET /\nMain dashboard — Jinja2 server-side render\nFull state injection: score, feeds, ads, geo, analytics\n_log_pageview() fires in daemon thread after response\nSelf-promo rotation if no paid ads configured' },
+
+  { id:'r_analytics', x:740, y:72, r:18, col:'#06b6d4', lbl:'/analytics',
+    sub:'GET /analytics — NEW\nDedicated admin analytics dashboard\ntemplates/analytics.html\nParallel API calls: /api/analytics + /api/analytics/traffic + /api/analytics/clicks\nLive stats · 30-day bar chart · topic performance\nScore history · CPM projections · marketing signals\nAuth-gated: admin session required' },
+
+  { id:'r_api_score', x:920, y:80, r:18, col:'#60a5fa', lbl:'/api/score',
+    sub:'GET /api/score — polled every 60s by all readers\nReturns: {score, pro_count, con_count, label}\nAnimates the ProCon number on the live dashboard\nNo auth required — public API\nPowers the "score watcher" client-side loop' },
+
+  { id:'r_api_analytics', x:1060, y:160, r:18, col:'#06b6d4', lbl:'/api/analytics',
+    sub:'GET /api/analytics — REFACTORED\nSingle CTE: 8 sequential queries → 1 round-trip\nReturns: imp_today/week, visitors_today/week\ncpm_base, clicks_today, readers_now (30min window)\ntop_topic, top_ad, score, CPM estimates\nAdmin-only · 30-second poll from analytics dashboard' },
+
+  { id:'r_traffic', x:1155, y:265, r:17, col:'#06b6d4', lbl:'/api/analytics\n/traffic',
+    sub:'GET /api/analytics/traffic?days=N — NEW\nDaily unique visitors for last N days (max 90)\nPostgreSQL date-bucketed aggregation\nPowers 30-day bar chart in analytics dashboard\nAdmin-only' },
+
+  { id:'r_clicks_api', x:1140, y:370, r:17, col:'#06b6d4', lbl:'/api/analytics\n/clicks',
+    sub:'GET /api/analytics/clicks?days=N — NEW\nTop topics and sources by click count\nTwo queries: topics GROUP BY + sources GROUP BY\nPowers topic/source performance tables\nAdmin-only' },
+
+  { id:'r_click', x:1060, y:460, r:17, col:'#60a5fa', lbl:'/api/click',
+    sub:'POST /api/click — FIXED\nStory click tracking\nFixed: event delegation on document replaces\ndirect querySelectorAll (missed dynamic dispatch)\nsendBeacon replaces fetch+keepalive\nStores: url_hash, topic, source → story_clicks\nNo PII stored — hashed URL only' },
+
+  { id:'r_submit', x:550, y:190, r:17, col:'#60a5fa', lbl:'/api/submit\n/dispatch',
+    sub:'POST /api/submit — Dispatch editor\nAdmin files URLs to the curated dispatch feed\nVADER scored on submit, quality flags applied\nPinned Pro domains bypass scoring (compound=1.0)\nDELETE /api/dispatch/<id> — remove an item\nPOST /api/submit/clear — clear the feed' },
+
+  { id:'r_webhooks', x:1080, y:555, r:17, col:'#ef4444', lbl:'Webhooks\nPayments',
+    sub:'POST /webhook/stripe — Stripe payment events\nPOST /webhook/github-sponsors — sponsor events\nPOST /webhook/patreon — Patreon tier events\nAll verified via HMAC signature before processing\nPOST /api/shoutout/checkout — Stripe checkout session\nGET /shoutout/success — post-payment confirmation' },
+
+  // ══ FEED ENGINE ══
+  { id:'feed', x:480, y:380, r:30, col:'#f59e0b', lbl:'Feed Engine',
+    sub:'_fetch() → ThreadPoolExecutor — parallel source fetch\n_fetch_one() per source: feedparser + VADER + quality flags\nQuality flags: satire, clickbait, junk, opinion, sarcasm\nRecency weighting: fresher headlines scored higher\nDeduplication: Jaccard similarity on title word sets\n_loop(): runs in background thread, hourly refresh\n30+ global sources — UK, US, Africa, Asia, Pacific, Europe' },
+
+  { id:'vader', x:255, y:240, r:18, col:'#fbbf24', lbl:'VADER',
+    sub:'vaderSentiment.SentimentIntensityAnalyzer\nCompound score: -1.0 (very negative) to 1.0 (very positive)\nPRO threshold: > 0.05\nCON threshold: < -0.05\nForce-negative regex: override compound for known negative patterns\nSarcasm risk: positive compound with negative context words\nClickbait detection: regex on title patterns' },
+
+  { id:'feedparser', x:225, y:360, r:18, col:'#fbbf24', lbl:'feedparser',
+    sub:'RSS/Atom parsing for all 30+ sources\nEntry fields: title, link, published_parsed, updated_parsed\nTimeout: 15s per source\nMax 25 entries per feed per cycle\nPublish timestamp → recency weighting\n_recency_weight(): exponential decay over 24h\nErrors: logged, source marked error=True, still rendered' },
+
+  { id:'sources', x:215, y:490, r:22, col:'#f97316', lbl:'30+\nSources',
+    sub:'30+ global news sources across 8 bias categories\nUK: Guardian · Sky · Independent · New Statesman\nInvestigative: Bellingcat · ProPublica · Intercept · Declassified\nGlobal: Al Jazeera · DW · Euronews · RFI · Asia Times\nAfrica: The Conversation Africa · IPS News\nPacific: RNZ Pacific\nIndependent: UnHerd · Byline Times · Novara · openDemocracy\nAcademic: The Conversation UK\nBias labels: Left / Centre-Left / Right / Independent / Global / Investigative' },
+
+  { id:'quality', x:330, y:620, r:17, col:'#fbbf24', lbl:'Quality\nFlags',
+    sub:'_quality_flags(title, url, compound)\nSatire detection: domain list + title keywords\nPress release detection: PR domain list\nJunk detection: sponsored/advertorial markers\nOpinion detection: first-person starters ("I think", "We must")\nClickbait detection: "Here\'s why", "You won\'t believe"\nSarcasm risk: positive compound + negative context words\nFraming risk: quoted phrases that may invert sentiment' },
+
+  { id:'geo', x:430, y:700, r:17, col:'#f59e0b', lbl:'Geo\nFeed',
+    sub:'_get_regional_stories(country_code, pro, con, flagged)\nIP → country code via MaxMind-style lookup\n_get_country(ip): header parsing + IP range detection\nFilters stories by country keyword matching\nFallback to UK feed if no regional match\nShown in sidebar on main dashboard' },
+
+  // ══ SCORE SYSTEM ══
+  { id:'score', x:490, y:245, r:28, col:'#a855f7', lbl:'ProCon\nScore',
+    sub:'_score_class(score): dial-good / dial-neutral / dial-bad\n_filter_description(score, pro, con, total)\n_record_score(score, pro_count, con_count, total)\nscore = round(pro / (pro+con) * 100) for scores with data\nStored per cycle to score_history table\nPolled every 60s by all live readers via /api/score\nAnimated on change: CSS transform scale pulse' },
+
+  { id:'score_hist', x:370, y:140, r:17, col:'#c084fc', lbl:'Score\nHistory',
+    sub:'score_history table: score, pro_count, con_count, total, recorded_at\n_get_score_history(): last 96 readings (4 days @ hourly)\nPowers the 7-day sparkline trend on main dashboard\nPowers score history table on analytics dashboard\nGET /api/score/history — returns list for chart rendering' },
+
+  { id:'dial', x:490, y:130, r:16, col:'#c084fc', lbl:'Dial\nArc',
+    sub:'_dial_arc(score): SVG arc path generator\nConverts 0–100 score to SVG arc coordinates\nRendered as animated dial on main dashboard\nStroke colour: green (>60) · amber (40–60) · red (<40)\nLive ProCon number animates via score watcher JS\nSpark trend: 7-day sparkline beside the dial' },
+
+  // ══ ANALYTICS (NEW) ══
+  { id:'analytics_tpl', x:1095, y:600, r:22, col:'#06b6d4', lbl:'analytics\n.html',
+    sub:'templates/analytics.html — NEW\nDedicated admin traffic management dashboard\nParallel fetch: /api/analytics + /traffic + /clicks + /score/history\nAuto-refreshes every 30 seconds\nLive stats: visitors, clicks, CTR, revenue, readers, score\n30-day bar chart (daily unique visitors)\nTopic + source performance tables with share bars\nScore history (last 10 readings)\nCPM projections at 1k/5k/10k/50k daily visitors\nMarketing action signals: traffic health, CTR status, revenue' },
+
+  { id:'cte', x:1240, y:500, r:16, col:'#22d3ee', lbl:'Single\nCTE',
+    sub:'analytics CTE: 1 round-trip replaces 8 sequential queries\nCTEs: imp · pv · readers(30min) · sc · top_topic · top_ad\nAll joined with LEFT JOIN ON TRUE\nCPM base: ad impressions when live, page views otherwise\nVisitors vs impressions distinction preserved\nNULL handling via Python OR defaults throughout' },
+
+  // ══ TEMPLATES / UI ══
+  { id:'index_tpl', x:1100, y:760, r:22, col:'#10b981', lbl:'index.html',
+    sub:'Main dashboard — Jinja2 server-side rendered\nFull state: score, feeds, ads, geo, analytics, dispatch\nLive score watcher: polls /api/score every 60s\nDispatch feed: polls /api/dispatch every 30s\nStory click tracking: event delegation on document\n  — sendBeacon → /api/click\n  — captures static AND dynamic dispatch items\nAd rotation: 45s cycle, impression logged via sendBeacon\nOpinionSays editor (admin) · Newsletter signup\nAnalytics panel (admin): 30s poll of /api/analytics\nPWA: manifest.json + sw.js service worker' },
+
+  { id:'click_track', x:1280, y:660, r:16, col:'#34d399', lbl:'Event\nDelegation',
+    sub:'FIXED: was querySelectorAll + addEventListener\nBug: dispatch items loaded via AJAX after init — missed\nFix: document.addEventListener("click", e => e.target.closest(selector))\nCaptures: .story .title a · .feature h2 a · .dispatch-title a · .geo-card .gc-title a\nPayload: {url, topic, source} via sendBeacon\nFallback: fetch+keepalive for browsers without sendBeacon\nResult: all clicks now tracked, static and dynamic' },
+
+  // ══ REVENUE / ADS ══
+  { id:'ads', x:1000, y:720, r:22, col:'#c9a84c', lbl:'Revenue\n& Ads',
+    sub:'Ad slots: top · mid · bottom · sidebar · feed\nSelf-promo rotation when no paid ads configured\nPaid ads: stored in ads table, rotated every 45s\nImpression logged: ad_id + slot → ad_impressions\nCPM calculation: imp_today / 1000 × cpm_rate\nRevenue estimate displayed in analytics dashboard\nGitHub Sponsors + Patreon webhooks → sponsors table\nStripe: shoutout checkout → subscribers table' },
+
+  { id:'stripe', x:1180, y:850, r:16, col:'#c084fc', lbl:'Stripe\nWebhook',
+    sub:'POST /webhook/stripe\nHMAC verified: stripe.WebhookSignature.verify_header()\nEvents: checkout.session.completed\nCreates shoutout record in sponsors table\nLinks sponsor name/tier to shoutout display on dashboard\nPOST /api/shoutout/checkout: creates Stripe checkout session\nGET /shoutout/success: post-payment confirmation page' },
+
+  { id:'sponsors', x:950, y:870, r:15, col:'#c9a84c', lbl:'GitHub\nPatreon',
+    sub:'POST /webhook/github-sponsors\nPOST /webhook/patreon\nBoth HMAC-verified before processing\n_insert_sponsor(platform, name, tier, amount)\nStores to sponsors table: platform, sponsor_name, tier_name, amount_cents\nShoutouts displayed in dispatch footer on main dashboard\nPOST /api/sponsors/<id>/fulfill — mark shoutout delivered' },
+
+  // ══ DATA / DEPLOY ══
+  { id:'data', x:800, y:760, r:28, col:'#16a34a', lbl:'Data &\nDeploy',
+    sub:'Neon PostgreSQL + Railway\nConnection pool: ThreadedConnectionPool(2–10)\n_db_conn(): contextmanager — pool or direct fallback\nlog.warning when falling back (observable in Railway)\n_init_pool() called in _loop() background thread\nTables: dispatches · opinion_says · page_views\n  ads · ad_impressions · story_clicks\n  score_history · subscribers · sponsors' },
+
+  { id:'neon', x:950, y:870, r:17, col:'#4ade80', lbl:'PostgreSQL\nNeon',
+    sub:'Neon serverless PostgreSQL\nConnection pool: 2 min · 10 max connections\nKey indexes: page_views(ip_hash, device, visited_at)\n  story_clicks(clicked_at) · score_history(recorded_at)\nAll tables: CREATE IF NOT EXISTS on startup\nGraceful degradation: feed works without DB\nDead ALTER TABLE migration removed (ip_hash in CREATE TABLE)' },
+
+  { id:'railway', x:795, y:885, r:15, col:'#4ade80', lbl:'Railway',
+    sub:'Railway Hobby plan\nProcfile: web: gunicorn server:app\n_loop() starts in background thread on boot\nPool init happens in _loop() — cold start fallback handled\nAuto-deploy on push to The-Code-Cauldron/MeDea main' },
+
+  { id:'env', x:645, y:870, r:15, col:'#4ade80', lbl:'ENV\nConfig',
+    sub:'DATABASE_URL — Neon connection string (pool)\nFLASK_SECRET_KEY — session signing\nADMIN_PASSWORD — login gate\nSTRIPE_SECRET_KEY — Stripe API\nSTRIPE_WEBHOOK_SECRET — HMAC verification\nGITHUB_SPONSORS_SECRET — webhook HMAC\nPATREON_SECRET — webhook HMAC' },
+
+  // ══ PWA ══
+  { id:'pwa', x:580, y:720, r:15, col:'#10b981', lbl:'PWA',
+    sub:'GET /manifest.json — PWA manifest\nGET /sw.js — service worker\nGET /offline — offline fallback page\nInstallable as app on mobile devices\nService worker: cache-first for static assets\nNetwork-first for API calls\nOffline page served when network unavailable' },
+];
+
+// ─── EDGE DEFINITIONS ──────────────────────────────────────────────────────
+// [from, to, animate_pulse, dashed]
+const E = [
+  // Core spines (animated)
+  ['root','server',      true,  false],
+  ['root','feed',        true,  false],
+  ['root','score',       true,  false],
+  ['root','analytics_tpl',true, false],
+  ['root','data',        true,  false],
+  ['root','ads',         false, false],
+
+  // Server routes
+  ['server','r_index',      true,  false],
+  ['server','r_analytics',  true,  false],
+  ['server','r_api_score',  true,  false],
+  ['server','r_api_analytics',false,false],
+  ['server','r_traffic',    false, false],
+  ['server','r_clicks_api', false, false],
+  ['server','r_click',      false, false],
+  ['server','r_submit',     false, false],
+  ['server','r_webhooks',   false, false],
+
+  // Feed engine
+  ['feed','vader',       false, false],
+  ['feed','feedparser',  false, false],
+  ['feed','sources',     true,  false],
+  ['feed','quality',     false, false],
+  ['feed','geo',         false, false],
+
+  // Score system
+  ['score','score_hist', false, false],
+  ['score','dial',       false, false],
+
+  // Analytics
+  ['analytics_tpl','cte',      false, false],
+  ['analytics_tpl','r_traffic', false, true],
+  ['analytics_tpl','r_clicks_api',false,true],
+
+  // Templates
+  ['index_tpl','click_track', false, false],
+  ['index_tpl','pwa',         false, false],
+
+  // Revenue
+  ['ads','stripe',    false, false],
+  ['ads','sponsors',  false, false],
+
+  // Data
+  ['data','neon',    false, false],
+  ['data','railway', false, false],
+  ['data','env',     false, false],
+
+  // Cross-system (dashed — data flows)
+  ['r_index','score',         true,  true],  // page load reads current score
+  ['r_index','feed',          true,  true],  // page load reads feed state
+  ['r_api_score','score',     true,  true],  // score poll reads live score
+  ['r_click','neon',          true,  true],  // clicks write to story_clicks
+  ['r_api_analytics','cte',   true,  true],  // analytics reads via single CTE
+  ['feed','neon',             false, true],  // feed cycle writes score_history
+  ['score','neon',            false, true],  // score recorded to DB
+  ['r_webhooks','neon',       false, true],  // webhooks write to sponsors
+  ['click_track','r_click',   true,  true],  // sendBeacon → /api/click
+  ['index_tpl','r_api_score', true,  true],  // live score watcher
+];
+
+// ─── RENDER ENGINE ─────────────────────────────────────────────────────────
+const svg    = document.getElementById('svg');
+const cvs    = document.getElementById('canvas');
+const bgRect = document.getElementById('bgRect');
+const gEdges = document.getElementById('gEdges');
+const gPulses= document.getElementById('gPulses');
+const gNodes = document.getElementById('gNodes');
+const gLabels= document.getElementById('gLabels');
+const tip    = document.getElementById('tip');
+const nmap   = {};
+N.forEach(n => nmap[n.id] = n);
+
+function mkPath(a, b){
+  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
+  const px=-dy/len*20, py=dx/len*20;
+  const c1x=a.x+dx*0.35+px, c1y=a.y+dy*0.35+py;
+  const c2x=a.x+dx*0.65+px, c2y=a.y+dy*0.65+py;
+  return `M ${a.x} ${a.y} C ${c1x} ${c1y} ${c2x} ${c2y} ${b.x} ${b.y}`;
+}
+
+let pidx=0;
+const edgeH=[], pulseH=[];
+E.forEach(([aid,bid,anim,dashed])=>{
+  const a=nmap[aid], b=nmap[bid];
+  if(!a||!b) return;
+  const pid=`p${pidx++}`;
+  const col=dashed?'#1a2a1a':a.col;
+  const op=dashed?0.7:0.3;
+  const sw=anim?1.4:(dashed?0.8:1.1);
+  const da=dashed?'3 4':'none';
+  edgeH.push(`<path id="${pid}" d="${mkPath(a,b)}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${da}" fill="none" opacity="${op}"/>`);
+  if(anim){
+    const dur=(1.8+Math.random()*1.6).toFixed(2);
+    const delay=(Math.random()*1.4).toFixed(2);
+    pulseH.push(`<g opacity="0.9">
+      <circle r="4.5" fill="${a.col}" filter="url(#gB)">
+        <animateMotion dur="${dur}s" begin="${delay}s" repeatCount="indefinite" calcMode="linear"><mpath href="#${pid}"/></animateMotion>
+      </circle>
+      <circle r="2.5" fill="${a.col}" filter="url(#gA)">
+        <animateMotion dur="${dur}s" begin="${delay}s" repeatCount="indefinite" calcMode="linear"><mpath href="#${pid}"/></animateMotion>
+      </circle>
+    </g>`);
+  }
+});
+gEdges.innerHTML=edgeH.join('');
+gPulses.innerHTML=pulseH.join('');
+
+const nodeH=[], labelH=[];
+N.forEach(n=>{
+  const {x,y,r,col,lbl,id}=n;
+  nodeH.push(`<circle cx="${x}" cy="${y}" r="${r*3.2}" fill="${col}" opacity="0.04" filter="url(#gC)"/>`);
+  nodeH.push(`<circle cx="${x}" cy="${y}" r="${r*1.8}" fill="${col}" opacity="0.09" filter="url(#gB)"/>`);
+  nodeH.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="#07080f" stroke="${col}" stroke-width="${r>26?2.2:1.6}" opacity="0.95" filter="url(#gA)"/>`);
+  if(r>26) nodeH.push(`<circle cx="${x}" cy="${y}" r="3" fill="${col}" opacity="0.6"/>`);
+  nodeH.push(`<circle class="nd" data-id="${id}" cx="${x}" cy="${y}" r="${r+6}" fill="transparent" stroke="transparent" style="cursor:default;"/>`);
+  const lines=lbl.split('\n');
+  const ly=y+r+14;
+  const fs=r>26?10:9;
+  if(lines.length===1){
+    labelH.push(`<text x="${x}" y="${ly}" text-anchor="middle" font-size="${fs}" font-weight="600" font-family="Courier New,monospace" fill="${col}" opacity="0.8">${lines[0]}</text>`);
+  } else {
+    labelH.push(`<text text-anchor="middle" font-family="Courier New,monospace" fill="${col}" opacity="0.8">
+      <tspan x="${x}" y="${ly}" font-size="${fs}" font-weight="600">${lines[0]}</tspan>
+      <tspan x="${x}" dy="13" font-size="${fs}" font-weight="600">${lines[1]}</tspan>
+    </text>`);
+  }
+});
+gNodes.innerHTML=nodeH.join('');
+gLabels.innerHTML=labelH.join('');
+
+// ── Tooltip
+gNodes.addEventListener('mouseover',e=>{
+  const nd=e.target.closest('.nd'); if(!nd) return;
+  const n=nmap[nd.dataset.id]; if(!n) return;
+  tip.innerHTML=`<b>${n.lbl.replace(/\n/g,' · ')}</b>${n.sub}`;
+  tip.style.display='block';
+});
+gNodes.addEventListener('mousemove',e=>{
+  const tw=tip.offsetWidth||290, th=tip.offsetHeight||150;
+  tip.style.left=(e.clientX+18+tw>window.innerWidth?e.clientX-tw-14:e.clientX+18)+'px';
+  tip.style.top=(e.clientY+12+th>window.innerHeight?e.clientY-th-10:e.clientY+12)+'px';
+});
+gNodes.addEventListener('mouseleave',()=>tip.style.display='none');
+
+// ── Pan / Zoom
+let tx=0,ty=0,ts=1,drag=false,lx=0,ly=0;
+function fit(){
+  const iw=window.innerWidth,ih=window.innerHeight,mw=1600,mh=1000;
+  bgRect.setAttribute('width',mw); bgRect.setAttribute('height',mh);
+  const s=Math.min(iw/mw,ih/mh)*0.88;
+  ts=s; tx=(iw-mw*s)/2; ty=(ih-mh*s)/2; apply();
+}
+function apply(){ cvs.setAttribute('transform',`translate(${tx},${ty}) scale(${ts})`); }
+svg.addEventListener('mousedown',e=>{ if(e.target.classList.contains('nd'))return; drag=true;lx=e.clientX;ly=e.clientY;svg.classList.add('drag'); });
+window.addEventListener('mousemove',e=>{ if(!drag)return; tx+=e.clientX-lx;ty+=e.clientY-ly;lx=e.clientX;ly=e.clientY;apply(); });
+window.addEventListener('mouseup',()=>{ drag=false;svg.classList.remove('drag'); });
+svg.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const s=e.deltaY<0?1.1:0.91;
+  tx=e.clientX-(e.clientX-tx)*s; ty=e.clientY-(e.clientY-ty)*s; ts*=s; apply();
+},{passive:false});
+fit(); window.addEventListener('resize',fit);
+</script>
+</body>
+</html>
